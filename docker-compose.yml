@@ -1,0 +1,115 @@
+# =============================================================================
+# DevAcademy - full stack environment
+#
+#   nginx  -> the ONLY service exposed to the host (port ${NGINX_PORT})
+#   nginx  -> proxies "/"      to the frontend (Next.js)
+#   nginx  -> proxies "/api/"  to the backend  (Express + TypeORM)
+#   backend -> connects to the MySQL database
+#
+# Everything runs on the internal network `devacademy_network`; the database,
+# the backend and the frontend never publish ports to the host.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Database: MySQL with a named volume so data survives container restarts.
+  # ---------------------------------------------------------------------------
+  database:
+    image: mysql:8.0
+    container_name: devacademy-database
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-devacademy}
+      MYSQL_USER: ${MYSQL_USER:-devacademy}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devacademy}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD:-root_password}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - devacademy_network
+
+  # ---------------------------------------------------------------------------
+  # Backend: Node.js + TypeScript API (Express, TypeORM, JWT).
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devacademy-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER:-devacademy}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-devacademy}
+      DB_NAME: ${MYSQL_DATABASE:-devacademy}
+      DB_SYNCHRONIZE: "true"
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - devacademy_network
+
+  # ---------------------------------------------------------------------------
+  # Frontend: Next.js application (App Router + TypeScript + Tailwind).
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devacademy-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_API_URL: /api
+    depends_on:
+      - backend
+    networks:
+      - devacademy_network
+
+  # ---------------------------------------------------------------------------
+  # Nginx: reverse proxy and the single entry point of the application.
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: devacademy-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - devacademy_network
+
+volumes:
+  # Named volume -> MySQL data is persisted between restarts.
+  mysql_data:
+    driver: local
+
+networks:
+  devacademy_network:
+    driver: bridge

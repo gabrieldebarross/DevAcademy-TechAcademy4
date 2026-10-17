@@ -1,0 +1,38 @@
+{
+  // OpenCode project configuration for the DevAcademy project.
+  // Guardrails that limit what the agent is allowed to do.
+  "$schema": "https://opencode.ai/config.json",
+
+  "instructions": ["AGENTS.md"],
+
+  // Rules are evaluated in order and the LAST matching rule wins.
+  "permissions": [
+    // --- Sensitive files: the agent must never read or write secrets -------
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" },
+    { "action": "edit", "resource": "*.env", "effect": "deny" },
+    { "action": "edit", "resource": "*.env.*", "effect": "deny" },
+    { "action": "edit", "resource": "*.env.example", "effect": "allow" },
+
+    // --- Shell guardrails: block destructive / exfiltration commands -------
+    { "action": "shell", "resource": "cat *.env*", "effect": "deny" },
+    { "action": "shell", "resource": "type *.env*", "effect": "deny" },
+    { "action": "shell", "resource": "Get-Content *.env*", "effect": "deny" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "shell", "resource": "docker compose down -v*", "effect": "deny" },
+    { "action": "shell", "resource": "docker volume rm *", "effect": "deny" },
+
+    // --- Anything outside the project requires explicit approval -----------
+    { "action": "external_directory", "resource": "*", "effect": "ask" }
+  ],
+
+  // A read-only reviewer agent used by the `review-requirements` skill.
+  "agents": {
+    "reviewer": {
+      "description": "Audits the project against the course requirements without changing files",
+      "mode": "subagent",
+      "permissions": [{ "action": "edit", "resource": "*", "effect": "deny" }]
+    }
+  }
+}
