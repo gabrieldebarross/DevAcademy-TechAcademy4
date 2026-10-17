@@ -33,8 +33,8 @@ Cada usuário da equipe também pode **editar o próprio cadastro**.
 | Front-end  | **Next.js 15** (App Router), **React 19**, **TypeScript**, **Tailwind CSS** |
 | Infraestrutura | **Docker**, **Docker Compose**, **Nginx** (proxy reverso)            |
 
-> Identificadores, nomes de arquivos e comentários estão em **inglês**.
-> Textos de interface e mensagens da API estão em **português (pt-BR)**.
+> Identificadores e nomes de arquivos estão em **inglês**.
+> Comentários, textos de interface e mensagens da API estão em **português (pt-BR)**.
 
 ---
 
@@ -52,6 +52,66 @@ Navegador ──:8080──► Nginx (ÚNICO serviço exposto)
 Fluxo de autenticação: o front-end envia `POST /api/auth/login`, guarda o JWT no
 `localStorage` e o envia em `Authorization: Bearer <token>`. Todas as rotas de
 recursos passam pelo middleware `ensureAuthenticated`.
+
+### Perfis de acesso (RBAC)
+
+No cadastro público é possível escolher o perfil pretendido:
+
+- **Aluno (`STUDENT`)** entra ativo na hora e já pode fazer login.
+- **Instrutor (`INSTRUCTOR`)** e **Administrador (`ADMIN`)** nascem como
+  `PENDING` e **não conseguem logar até um ADMIN aprovar** o cadastro
+  (`PATCH /api/users/:id/status`).
+
+Um ADMIN também pode **criar contas diretamente** com qualquer perfil e uma
+**senha base** (`POST /api/users`). Nesse caso a conta já nasce ativa, mas o
+usuário é **obrigado a trocar a senha no primeiro acesso**: enquanto não trocar,
+o backend responde **403** nas demais rotas e o frontend redireciona para a
+tela `/change-password` (a troca acontece em `PUT /api/users/me`).
+
+O perfil é lido do banco a cada requisição (não fica "congelado" no JWT), o que
+permite revogar permissões imediatamente.
+
+| Perfil | O que pode fazer |
+| --- | --- |
+| `ADMIN` | Gerencia tudo: categorias, instrutores, cursos, matrículas, contas e perfis de usuário. Aprova/recusa cadastros pendentes. É o **único** que enxerga o **CPF** dos instrutores. |
+| `INSTRUCTOR` | Edita os **próprios** cursos e gerencia/aprova as matrículas das **suas** aulas. Não vê o CPF de outros instrutores. |
+| `STUDENT` | Consulta o catálogo, **solicita matrícula** em um curso e vê apenas as próprias matrículas. Nunca vê CPF de instrutores. |
+
+As checagens acontecem em duas camadas: um `requireRole(...)` no middleware
+(checagem grosseira por perfil) e a validação de **propriedade** dentro dos
+serviços (`ForbiddenError`), que é a fonte da verdade. Requisições sem permissão
+retornam **403**.
+
+**Situação da conta (`status`):** `PENDING` (aguardando aprovação), `ACTIVE`
+(liberada para login) ou `REJECTED` (recusada). Um cadastro recusado pode ser
+reaprovado depois.
+
+**Solicitação de matrícula:** o aluno envia `POST /api/enrollments` com
+`{ "courseId": "..." }` e a matrícula nasce como `PENDING`. O instrutor da aula
+(ou um admin) aprova com `PUT /api/enrollments/:id` enviando
+`{ "studentId": "...", "courseId": "...", "status": "ACTIVE" }`. O aluno pode
+cancelar a própria solicitação enquanto ela ainda está pendente.
+
+**Instrutor = perfil + conta de acesso (sincronizado nos dois sentidos):** o
+cadastro acadêmico (`Instructor`) e a conta de login (`User`) são entidades
+distintas, mas mantidas em sincronia:
+
+- **Criar um instrutor** (`POST /api/instructors`) cria, na mesma transação, a
+  conta `User` com perfil `INSTRUCTOR`, `ACTIVE` e troca de senha obrigatória no
+  1º acesso (a senha base vem no corpo).
+- **Uma conta ativa com perfil `INSTRUCTOR`** (criada em `/users/new`, promovida
+  por `PATCH /api/users/:id/role`, ou aprovada após o cadastro público) **gera
+  automaticamente** o cadastro de instrutor, com especialidade `A definir`
+  (editável depois em `/instructors`). Contas criadas antes disso são
+  reconciliadas na **inicialização da API**.
+- **Editar** o instrutor mantém o **nome** em sincronia com a conta (e-mail/CPF
+  do cadastro são apenas de contato e não mudam o login); **excluir** o instrutor
+  remove a conta, e mudar a role/desativar remove o cadastro — ambos são
+  **bloqueados** (`409`) se houver cursos vinculados.
+
+Assim **não existe instrutor sem login** nem conta `INSTRUCTOR` sem cadastro de
+instrutor. As contas de `INSTRUCTOR` podem surgir por: cadastro público aprovado
+pelo ADMIN, troca de role, `POST /api/users`, ou `POST /api/instructors`.
 
 ---
 
@@ -81,7 +141,7 @@ recursos passam pelo middleware `ensureAuthenticated`.
 │       ├── services/         # Regras de negócio
 │       ├── controllers/      # Camada HTTP
 │       ├── routes/           # Rotas /api/*
-│       ├── middlewares/      # ensureAuthenticated + errorHandler
+│       ├── middlewares/      # ensureAuthenticated, requireRole + errorHandler
 │       ├── validators/       # CPF, e-mail e força de senha
 │       ├── security/         # BcryptPasswordHasher, JwtTokenProvider
 │       ├── dtos/             # Inputs e mappers de resposta
@@ -94,6 +154,7 @@ recursos passam pelo middleware `ensureAuthenticated`.
         ├── app/              # Rotas (App Router): login, register, (protected)/...
         ├── components/ui/    # Componentes genéricos (Button, Input, Table<T>, ...)
         ├── components/layout/# AppShell, Sidebar, Header, AuthGuard
+        ├── components/auth/  # Can e RoleGuard (controle de acesso na UI)
         ├── contexts/         # AuthContext (usuário global) e ToastContext
         ├── services/         # Cliente HTTP + services por recurso
         ├── types/            # Tipos de domínio + PaginatedResponse<T>
@@ -183,10 +244,18 @@ docker compose -f docker-compose.prod.yml exec backend node dist/database/seed.j
 
 ### Credenciais de demonstração
 
-| E-mail                   | Senha            |
-| ------------------------ | ---------------- |
-| `admin@devacademy.com`   | `DevAcademy@123` |
-| `bruno@devacademy.com`   | `DevAcademy@123` |
+| E-mail                     | Senha            | Perfil       |
+| -------------------------- | ---------------- | ------------ |
+| `admin@devacademy.com`     | `DevAcademy@123` | `ADMIN`      |
+| `instrutor@devacademy.com` | `DevAcademy@123` | `INSTRUCTOR` |
+| `marina@devacademy.com`    | `DevAcademy@123` | `INSTRUCTOR` |
+| `bruno@devacademy.com`     | `DevAcademy@123` | `STUDENT`    |
+| `pedro@devacademy.com`     | `DevAcademy@123` | `INSTRUCTOR` (cadastro **pendente**) |
+
+> As contas `instrutor@devacademy.com` (Carlos Mendes) e `marina@devacademy.com`
+> estão vinculadas aos respectivos instrutores. A conta `pedro@devacademy.com`
+> nasce **pendente** para demonstrar a aprovação de cadastro pelo ADMIN (o login
+> só funciona depois de aprovado).
 
 ---
 
@@ -194,19 +263,28 @@ docker compose -f docker-compose.prod.yml exec backend node dist/database/seed.j
 
 | Método | Rota                     | Autenticação | Descrição                              |
 | ------ | ------------------------ | ------------ | -------------------------------------- |
-| POST   | `/api/auth/register`     | Pública      | Cadastro de usuário                    |
-| POST   | `/api/auth/login`        | Pública      | Login → retorna JWT                    |
-| GET    | `/api/users`             | JWT          | Listagem paginada (apenas leitura)     |
+| POST   | `/api/auth/register`     | Pública      | Cadastro (escolhe perfil; privilegiados ficam pendentes) |
+| POST   | `/api/auth/login`        | Pública      | Login → retorna JWT (bloqueado se pendente/recusado) |
+| GET    | `/api/users`             | JWT (ADMIN/INSTRUCTOR) | Listagem paginada (filtros `role`/`status`, sem CPF) |
+| POST   | `/api/users`             | JWT (ADMIN)  | Cria conta com senha base (troca no 1º acesso) |
 | GET    | `/api/users/me`          | JWT          | Dados do usuário autenticado           |
-| PUT    | `/api/users/me`          | JWT          | Edita o próprio usuário                |
+| PUT    | `/api/users/me`          | JWT          | Edita o próprio usuário / troca a senha |
+| PATCH  | `/api/users/:id/role`    | JWT (ADMIN)  | Troca o perfil de acesso               |
+| PATCH  | `/api/users/:id/status`  | JWT (ADMIN)  | Aprova/recusa um cadastro pendente     |
 | GET    | `/api/categories`        | JWT          | Lista paginada de categorias           |
 | GET    | `/api/categories/:id`    | JWT          | Detalhe de uma categoria               |
-| POST   | `/api/categories`        | JWT          | Cria categoria                         |
-| PUT    | `/api/categories/:id`    | JWT          | Atualiza categoria                     |
-| DELETE | `/api/categories/:id`    | JWT          | Remove categoria                       |
-| ...    | `/api/instructors`       | JWT          | CRUD completo de instrutores           |
-| ...    | `/api/courses`           | JWT          | CRUD completo de cursos                |
-| ...    | `/api/enrollments`       | JWT          | CRUD completo de matrículas            |
+| POST   | `/api/categories`        | JWT (ADMIN)  | Cria categoria                         |
+| PUT    | `/api/categories/:id`    | JWT (ADMIN)  | Atualiza categoria                     |
+| DELETE | `/api/categories/:id`    | JWT (ADMIN)  | Remove categoria                       |
+| ...    | `/api/instructors`       | JWT (escrita: ADMIN) | CRUD completo de instrutores   |
+| ...    | `/api/courses`           | JWT (criação: ADMIN; edição: ADMIN/INSTRUCTOR dono) | CRUD completo de cursos |
+| ...    | `/api/enrollments`       | JWT (escrita: ADMIN/INSTRUCTOR; aluno solicita) | Matrículas + solicitação/aprovação |
+
+> **RBAC em detalhe:** escritas de categorias e instrutores são exclusivas do
+> **ADMIN**; cursos e matrículas aceitam **INSTRUCTOR**, mas apenas sobre os
+> próprios recursos. Sem permissão, a API responde **403** (`ForbiddenError`).
+> O aluno solicita a própria matrícula em `POST /api/enrollments` (criada como
+> `PENDING`) e só pode cancelá-la enquanto pendente.
 
 Respostas:
 
@@ -239,6 +317,23 @@ No Scalar você pode autenticar (botão **Authorize**, colando o token JWT devol
 pelo login) e testar todos os endpoints direto pelo navegador. O documento é
 mantido em `backend/src/docs/openapi.ts`, é servido pelo próprio backend e não
 adiciona dependência de runtime (o Scalar é carregado via CDN oficial).
+
+---
+
+## Design "Academy modern"
+
+A interface usa uma linguagem visual quente e acadêmica, centralizada em tokens
+em `frontend/tailwind.config.ts`:
+
+- **Paleta:** vinho (`primary`) para as ações, dourado (`accent`) para destaques
+  e neutros quentes para superfícies e texto (o `gray` padrão foi substituído).
+- **Tipografia:** serif de display nos títulos, sans no corpo e mono em valores,
+  resolvidas por variáveis CSS (`--font-display`, `--font-sans`, `--font-mono`)
+  em `globals.css` — sem download externo no momento do build.
+- **Componentes:** `components/ui/*` (`Button`, `Table<T>`, `Badge`, ...) e o
+  shell (`AppShell`, `Sidebar`, `Header`) seguem os mesmos tokens.
+- **Acessibilidade:** foco visível consistente, contraste AA e respeito a
+  `prefers-reduced-motion`.
 
 ---
 
@@ -282,6 +377,11 @@ operação é bloqueada pelos guardrails.
 - **CRUDs completos** — Categorias, Instrutores, Cursos e Matrículas, todos com
   rotas autenticadas, paginação, 404 em edição/remoção de inexistentes e
   relacionamentos (Curso→Categoria, Curso→Instrutor, Matrícula→Usuário/Curso).
+- **Perfis de acesso (RBAC)** — `entities/UserRole.ts`, `middlewares/requireRole.ts`
+  e a validação de propriedade dentro de `CourseService`/`EnrollmentService`
+  (`ForbiddenError`). O CPF do instrutor só é retornado ao **ADMIN**.
+- **Solicitação de matrícula** — o aluno cria a própria matrícula como `PENDING`
+  (`EnrollmentService.create`) e o instrutor/admin aprova via `PUT`.
 - **Configuração de Agentes** — seção acima.
 
 ### Front-end
@@ -296,6 +396,13 @@ operação é bloqueada pelos guardrails.
   permite alterar o e-mail.
 - **CRUDs completos** — para cada recurso há **três telas separadas**
   (listagem paginada, cadastro `/new` e edição `/[id]/edit`).
+- **RBAC na interface** — `AuthContext` expõe `role`/`isAdmin`/`isInstructor`;
+  `RoleGuard` protege as telas de escrita, o componente `Can` esconde ações e o
+  menu lateral é filtrado por perfil. A tela `/users` permite ao **ADMIN** trocar
+  o perfil de uma conta.
+- **Solicitação de matrícula** — o aluno vê "Matricular-se" na lista de cursos e
+  acompanha o status (Badge *Pendente*); instrutor/admin têm a ação **Aprovar**.
+- **Design system** — ver [Design "Academy modern"](#design-academy-modern).
 - **Componentização** — componentes genéricos e reutilizáveis em
   `components/ui/` (incluindo `Table<T>` genérico), páginas compostas por vários
   componentes e componentes exclusivos de página em `_components/`.
@@ -332,8 +439,12 @@ operação é bloqueada pelos guardrails.
 ## Observações
 
 - O CRUD de **usuários** não é completo por exigência do trabalho (apenas
-  cadastro, login e edição do próprio usuário). O endpoint `GET /api/users` é
-  somente-leitura e existe para **selecionar o aluno** ao cadastrar uma matrícula.
+  cadastro, login, edição do próprio usuário e a troca de perfil pelo admin). O
+  endpoint `GET /api/users` é somente-leitura e existe para **selecionar o aluno**
+  ao cadastrar uma matrícula.
+- Os perfis (`ADMIN`/`INSTRUCTOR`/`STUDENT`) são aplicados no back-end (fonte da
+  verdade) e refletidos na interface; o aluno **solicita** matrícula e precisa de
+  aprovação.
 - O Nginx publica a porta **8080** no host (evita conflito com a porta 80 do
   Windows); internamente ele escuta na 80.
 - Os arquivos `.env` não são versionados e o agente de IA é impedido, por

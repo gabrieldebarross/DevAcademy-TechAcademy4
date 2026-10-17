@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import type { Category } from '@/types';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { CategoryForm } from '../../_components/CategoryForm';
 
 export default function EditCategoryPage() {
@@ -48,18 +49,20 @@ export default function EditCategoryPage() {
   }, [params.id]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Editar categoria"
-        description="Atualize os dados da categoria."
-      />
-      {loading && <Spinner label="Carregando categoria..." />}
-      {!loading && category && <CategoryForm category={category} />}
-      {!loading && !category && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Categoria não encontrada.
-        </p>
-      )}
-    </div>
+    <RoleGuard allow={['ADMIN']}>
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Editar categoria"
+          description="Atualize os dados da categoria."
+        />
+        {loading && <Spinner label="Carregando categoria..." />}
+        {!loading && category && <CategoryForm category={category} />}
+        {!loading && !category && (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            Categoria não encontrada.
+          </p>
+        )}
+      </div>
+    </RoleGuard>
   );
 }

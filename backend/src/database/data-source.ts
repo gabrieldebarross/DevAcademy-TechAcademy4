@@ -8,8 +8,8 @@ import { Instructor } from '../entities/Instructor';
 import { User } from '../entities/User';
 
 /**
- * Single TypeORM data source of the application.
- * Credentials come exclusively from the environment (never hardcoded).
+ * Fonte de dados TypeORM única da aplicação.
+ * As credenciais vêm exclusivamente do ambiente (nunca fixadas no código).
  */
 export const AppDataSource = new DataSource({
   type: 'mysql',

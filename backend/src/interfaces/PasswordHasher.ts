@@ -1,7 +1,7 @@
 /**
- * Contract for password hashing.
- * The service layer depends on this abstraction, so the algorithm can be
- * replaced without touching the business rules (Dependency Inversion).
+ * Contrato para o hash de senhas.
+ * A camada de serviço depende desta abstração, então o algoritmo pode ser
+ * trocado sem tocar nas regras de negócio (Inversão de Dependência).
  */
 export interface PasswordHasher {
   hash(plainPassword: string): Promise<string>;

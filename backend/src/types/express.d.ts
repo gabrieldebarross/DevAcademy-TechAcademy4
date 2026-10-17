@@ -1,8 +1,8 @@
 import { User } from '../entities/User';
 
 declare global {
-  // Allows the authentication middleware to attach the logged user to the
-  // request object in a type safe way.
+  // Permite que o middleware de autenticação anexe o usuário logado ao objeto
+  // de requisição com segurança de tipos.
   namespace Express {
     interface Request {
       user?: User;

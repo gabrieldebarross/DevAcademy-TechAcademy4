@@ -10,8 +10,8 @@ const users = new UserRepository();
 const BEARER_PREFIX = 'Bearer ';
 
 /**
- * Validates the JWT sent in the Authorization header and loads the current
- * user into `req.user`. Every resource route goes through this middleware.
+ * Valida o JWT enviado no cabeçalho Authorization e carrega o usuário atual em
+ * `req.user`. Toda rota de recurso passa por este middleware.
  */
 export async function ensureAuthenticated(
   req: Request,

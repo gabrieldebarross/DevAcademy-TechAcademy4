@@ -1,13 +1,13 @@
 {
-  // OpenCode project configuration for the DevAcademy project.
-  // Guardrails that limit what the agent is allowed to do.
+  // Configuração do projeto OpenCode para o DevAcademy.
+  // Guardrails que limitam o que o agente pode fazer.
   "$schema": "https://opencode.ai/config.json",
 
   "instructions": ["AGENTS.md"],
 
-  // Rules are evaluated in order and the LAST matching rule wins.
+  // As regras são avaliadas em ordem e a ÚLTIMA regra que casa vence.
   "permissions": [
-    // --- Sensitive files: the agent must never read or write secrets -------
+    // --- Arquivos sensíveis: o agente nunca deve ler nem escrever segredos --
     { "action": "read", "resource": "*.env", "effect": "deny" },
     { "action": "read", "resource": "*.env.*", "effect": "deny" },
     { "action": "read", "resource": "*.env.example", "effect": "allow" },
@@ -15,7 +15,7 @@
     { "action": "edit", "resource": "*.env.*", "effect": "deny" },
     { "action": "edit", "resource": "*.env.example", "effect": "allow" },
 
-    // --- Shell guardrails: block destructive / exfiltration commands -------
+    // --- Guardrails de shell: bloquear comandos destrutivos / de exfiltração -
     { "action": "shell", "resource": "cat *.env*", "effect": "deny" },
     { "action": "shell", "resource": "type *.env*", "effect": "deny" },
     { "action": "shell", "resource": "Get-Content *.env*", "effect": "deny" },
@@ -23,14 +23,14 @@
     { "action": "shell", "resource": "docker compose down -v*", "effect": "deny" },
     { "action": "shell", "resource": "docker volume rm *", "effect": "deny" },
 
-    // --- Anything outside the project requires explicit approval -----------
+    // --- Qualquer coisa fora do projeto exige aprovação explícita ----------
     { "action": "external_directory", "resource": "*", "effect": "ask" }
   ],
 
-  // A read-only reviewer agent used by the `review-requirements` skill.
+  // Agente revisor somente-leitura usado pela skill `review-requirements`.
   "agents": {
     "reviewer": {
-      "description": "Audits the project against the course requirements without changing files",
+      "description": "Audita o projeto contra os requisitos do curso sem alterar arquivos",
       "mode": "subagent",
       "permissions": [{ "action": "edit", "resource": "*", "effect": "deny" }]
     }

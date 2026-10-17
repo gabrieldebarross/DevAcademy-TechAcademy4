@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import type { Course } from '@/types';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { CourseForm } from '../../_components/CourseForm';
 
 export default function EditCoursePage() {
@@ -48,15 +49,17 @@ export default function EditCoursePage() {
   }, [params.id]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Editar curso" description="Atualize os dados do curso." />
-      {loading && <Spinner label="Carregando curso..." />}
-      {!loading && course && <CourseForm course={course} />}
-      {!loading && !course && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Curso não encontrado.
-        </p>
-      )}
-    </div>
+    <RoleGuard allow={['ADMIN', 'INSTRUCTOR']}>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Editar curso" description="Atualize os dados do curso." />
+        {loading && <Spinner label="Carregando curso..." />}
+        {!loading && course && <CourseForm course={course} />}
+        {!loading && !course && (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            Curso não encontrado.
+          </p>
+        )}
+      </div>
+    </RoleGuard>
   );
 }

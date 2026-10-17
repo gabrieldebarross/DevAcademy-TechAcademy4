@@ -5,7 +5,7 @@ import { scalarHtml } from '../docs/scalar';
 
 const router = Router();
 
-/** Raw OpenAPI document, consumed by Scalar and by any other tooling. */
+/** Documento OpenAPI em formato bruto, consumido pelo Scalar e por outras ferramentas. */
 router.get('/openapi.json', (_req, res) => {
   res.status(200).json(openApiDocument);
 });

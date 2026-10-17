@@ -1,9 +1,9 @@
 import 'dotenv/config';
 
 /**
- * Typed access to the environment variables.
- * Secrets are never hardcoded: they come from the process environment
- * (`.env` locally, compose environment variables in production).
+ * Acesso tipado às variáveis de ambiente.
+ * Segredos nunca são fixados no código: vêm do ambiente do processo
+ * (`.env` localmente, variáveis de ambiente do compose em produção).
  */
 export interface DatabaseEnvironment {
   readonly host: string;

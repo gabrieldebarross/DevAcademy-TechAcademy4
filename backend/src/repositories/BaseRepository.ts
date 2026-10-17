@@ -11,17 +11,17 @@ export interface ListOptions<T> {
 }
 
 /**
- * Generic repository with the operations shared by every resource.
+ * Repositório genérico com as operações compartilhadas por todo recurso.
  *
- * Being generic (`T`) it removes duplication while keeping full type safety:
- * a `CategoryRepository` returns `Category`, an `EnrollmentRepository` returns
- * `Enrollment`, and both reuse the exact same pagination logic.
+ * Por ser genérico (`T`) elimina duplicação mantendo total segurança de tipos:
+ * um `CategoryRepository` devolve `Category`, um `EnrollmentRepository` devolve
+ * `Enrollment`, e ambos reutilizam exatamente a mesma lógica de paginação.
  */
 export abstract class BaseRepository<T extends ObjectLiteral> {
   protected constructor(protected readonly repository: Repository<T>) {}
 
   async findById(id: string): Promise<T | null> {
-    // TypeORM resolves filters by metadata property name, hence `_id`.
+    // O TypeORM resolve filtros pelo nome da propriedade na metadata, daí `_id`.
     const where = { _id: id } as unknown as FindOptionsWhere<T>;
 
     return this.repository.findOne({ where });

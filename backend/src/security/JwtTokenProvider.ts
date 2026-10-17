@@ -4,7 +4,7 @@ import { env } from '../config/env';
 import { UnauthorizedError } from '../errors/UnauthorizedError';
 import { TokenPayload, TokenProvider } from '../interfaces/TokenProvider';
 
-/** jsonwebtoken implementation of the `TokenProvider` contract. */
+/** Implementação de `TokenProvider` com jsonwebtoken. */
 export class JwtTokenProvider implements TokenProvider {
   private readonly expiresIn: SignOptions['expiresIn'];
 

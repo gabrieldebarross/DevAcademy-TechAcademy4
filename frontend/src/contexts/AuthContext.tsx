@@ -10,12 +10,19 @@ import {
   type ReactNode,
 } from 'react';
 import { TOKEN_STORAGE_KEY, USER_STORAGE_KEY } from '@/services/api';
-import type { User } from '@/types';
+import type { User, UserRole } from '@/types';
 
 interface AuthContextValue {
   user: User | null;
   token: string | null;
+  role: UserRole | null;
   restoring: boolean;
+  isAdmin: boolean;
+  isInstructor: boolean;
+  isStudent: boolean;
+  /** true quando o usuário ainda precisa trocar a senha base do primeiro acesso. */
+  mustChangePassword: boolean;
+  hasRole: (...roles: UserRole[]) => boolean;
   signIn: (token: string, user: User) => void;
   signOut: () => void;
   updateUser: (user: User) => void;
@@ -69,9 +76,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   }, []);
 
+  const role = user?.role ?? null;
+
+  // O perfil fica no contexto para as telas decidirem o que exibir.
+  // A autorização real acontece no backend, a cada requisição.
+  const hasRole = useCallback(
+    (...roles: UserRole[]) => (role ? roles.includes(role) : false),
+    [role],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, restoring, signIn, signOut, updateUser }),
-    [user, token, restoring, signIn, signOut, updateUser],
+    () => ({
+      user,
+      token,
+      role,
+      restoring,
+      isAdmin: role === 'ADMIN',
+      isInstructor: role === 'INSTRUCTOR',
+      isStudent: role === 'STUDENT',
+      mustChangePassword: user?.mustChangePassword ?? false,
+      hasRole,
+      signIn,
+      signOut,
+      updateUser,
+    }),
+    [user, token, role, restoring, hasRole, signIn, signOut, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

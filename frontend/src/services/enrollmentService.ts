@@ -2,9 +2,10 @@ import { request } from './api';
 import type { Enrollment, EnrollmentStatus, PaginatedResponse } from '@/types';
 
 export interface EnrollmentPayload {
-  studentId: string;
+  /** Obrigatório para ADMIN/INSTRUCTOR; ignorado quando o aluno solicita. */
+  studentId?: string;
   courseId: string;
-  status: EnrollmentStatus;
+  status?: EnrollmentStatus;
 }
 
 export const enrollmentService = {

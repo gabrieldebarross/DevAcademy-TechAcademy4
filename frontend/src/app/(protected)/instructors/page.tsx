@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { instructorService } from '@/services/instructorService';
 import { ApiError } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import type { Instructor, PaginationMeta } from '@/types';
 import { formatCpf } from '@/utils/formatters';
@@ -19,6 +20,7 @@ const LIMIT = 10;
 
 export default function InstructorsPage() {
   const toast = useToast();
+  const { isAdmin } = useAuth();
   const [items, setItems] = useState<Instructor[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -79,9 +81,22 @@ export default function InstructorsPage() {
   const columns: Array<Column<Instructor>> = [
     { key: 'name', header: 'Nome' },
     { key: 'email', header: 'E-mail' },
-    { key: 'cpf', header: 'CPF', render: (item) => formatCpf(item.cpf) },
-    { key: 'specialty', header: 'Especialidade' },
-    {
+  ];
+
+  // O CPF é dado pessoal: só o ADMIN o enxerga.
+  if (isAdmin) {
+    columns.push({
+      key: 'cpf',
+      header: 'CPF',
+      render: (item) => formatCpf(item.cpf ?? ''),
+    });
+  }
+
+  columns.push({ key: 'specialty', header: 'Especialidade' });
+
+  // As ações de escrita só aparecem para quem tem permissão (RBAC).
+  if (isAdmin) {
+    columns.push({
       key: 'actions',
       header: 'Ações',
       render: (item) => (
@@ -96,18 +111,23 @@ export default function InstructorsPage() {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Instrutores"
-        description="Gerencie os instrutores da escola."
+        description={
+          isAdmin ? 'Gerencie os instrutores da escola.' : 'Instrutores da escola.'
+        }
+        help="Todos os perfis leem os instrutores, e o CPF só é exibido ao ADMIN. Criar/editar/excluir é exclusivo do ADMIN. Criar um instrutor cria a conta de acesso, e um usuário com perfil INSTRUCTOR também aparece aqui (complete especialidade/bio na edição)."
         actions={
-          <Link href="/instructors/new">
-            <Button>Novo instrutor</Button>
-          </Link>
+          isAdmin ? (
+            <Link href="/instructors/new">
+              <Button>Novo instrutor</Button>
+            </Link>
+          ) : undefined
         }
       />
 

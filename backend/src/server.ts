@@ -3,9 +3,13 @@ import 'reflect-metadata';
 import app from './app';
 import { env } from './config/env';
 import { AppDataSource } from './database/data-source';
+import { reconcileInstructorProfiles } from './database/reconcileInstructorProfiles';
 
 async function bootstrap(): Promise<void> {
   await AppDataSource.initialize();
+
+  // Mantém os cadastros de instrutor em sincronia com as contas de acesso.
+  await reconcileInstructorProfiles();
 
   app.listen(env.port, () => {
     console.log(`DevAcademy API running on http://localhost:${env.port}`);

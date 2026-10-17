@@ -1,4 +1,5 @@
 import { User } from '../entities/User';
+import { UserRole } from '../entities/UserRole';
 import { UserResponse, toUserResponse } from './user';
 
 export interface RegisterInput {
@@ -6,6 +7,11 @@ export interface RegisterInput {
   readonly email: string;
   readonly cpf: string;
   readonly password: string;
+  /**
+   * Perfil pretendido no cadastro. Aluno entra ativo na hora; perfis
+   * privilegiados ficam pendentes de aprovação de um ADMIN.
+   */
+  readonly role?: UserRole;
 }
 
 export interface LoginInput {

@@ -11,8 +11,8 @@ interface ErrorBody {
 }
 
 /**
- * Single place that translates exceptions into HTTP responses.
- * Expected errors keep their own status code (polymorphism through `AppError`).
+ * Ponto único que traduz exceções em respostas HTTP.
+ * Erros esperados mantêm o próprio código de status (polimorfismo via `AppError`).
  */
 export function errorHandler(
   error: unknown,
@@ -56,7 +56,7 @@ export function errorHandler(
   res.status(500).json(body);
 }
 
-/** Answers unmatched routes with the same error shape used by the API. */
+/** Responde a rotas não encontradas com o mesmo formato de erro da API. */
 export function notFoundHandler(req: Request, res: Response): void {
   const body: ErrorBody = {
     statusCode: 404,

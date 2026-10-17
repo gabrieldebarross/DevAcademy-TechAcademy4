@@ -10,8 +10,8 @@ interface CpfInputProps
 }
 
 /**
- * CPF field that masks the input as `000.000.000-00` while the user types and
- * never allows more than 11 digits.
+ * Campo de CPF que mascara a entrada como `000.000.000-00` enquanto o usuário
+ * digita e nunca permite mais de 11 dígitos.
  */
 export const CpfInput = forwardRef<HTMLInputElement, CpfInputProps>(
   function CpfInput({ value, onValueChange, ...rest }, ref) {

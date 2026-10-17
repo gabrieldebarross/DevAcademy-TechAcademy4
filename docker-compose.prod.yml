@@ -1,20 +1,20 @@
 # =============================================================================
-# DevAcademy - production environment for a cloud VM
+# DevAcademy - ambiente de produção para uma VM na nuvem
 #
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
-# Same topology as docker-compose.yml (nginx -> frontend/backend -> mysql),
-# with the differences a real server needs:
-#   * required secrets (no insecure fallbacks): MYSQL_ROOT_PASSWORD,
-#     MYSQL_PASSWORD and JWT_SECRET must be set in the `.env` file
-#   * restart: always + healthchecks so the stack recovers on its own
-#   * only the Nginx container publishes a port (${HOST_PORT}, default 80)
-#   * everything else lives on the internal network `devacademy_network`
+# Mesma topologia do docker-compose.yml (nginx -> frontend/backend -> mysql),
+# com as diferenças que um servidor real exige:
+#   * segredos obrigatórios (sem padrões inseguros): MYSQL_ROOT_PASSWORD,
+#     MYSQL_PASSWORD e JWT_SECRET precisam estar no arquivo `.env`
+#   * restart: always + healthchecks para a stack se recuperar sozinha
+#   * apenas o container Nginx publica porta (${HOST_PORT}, padrão 80)
+#   * todo o resto vive na rede interna `devacademy_network`
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
-  # Database: MySQL 8 with a named volume so data survives restarts/reboots.
+  # Banco: MySQL 8 com volume nomeado para os dados sobreviverem a reinícios.
   # ---------------------------------------------------------------------------
   database:
     image: mysql:8.0
@@ -46,7 +46,7 @@ services:
       - devacademy_network
 
   # ---------------------------------------------------------------------------
-  # Backend: Express + TypeScript + TypeORM API.
+  # Backend: API Express + TypeScript + TypeORM.
   # ---------------------------------------------------------------------------
   backend:
     build:
@@ -79,14 +79,14 @@ services:
       - devacademy_network
 
   # ---------------------------------------------------------------------------
-  # Frontend: Next.js (standalone build).
+  # Frontend: Next.js (build standalone).
   # ---------------------------------------------------------------------------
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Baked into the browser bundle: relative `/api` goes through Nginx.
+        # Embutido no bundle do navegador: o `/api` relativo passa pelo Nginx.
         NEXT_PUBLIC_API_URL: /api
     image: devacademy-frontend:latest
     restart: always
@@ -106,7 +106,7 @@ services:
       - devacademy_network
 
   # ---------------------------------------------------------------------------
-  # Nginx: the single public entry point (reverse proxy).
+  # Nginx: o único ponto de entrada público (proxy reverso).
   # ---------------------------------------------------------------------------
   nginx:
     image: nginx:alpine

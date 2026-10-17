@@ -5,7 +5,7 @@ export interface PaginationMeta {
   readonly totalPages: number;
 }
 
-/** Envelope returned by every paginated list endpoint. */
+/** Envelope devolvido por todo endpoint de listagem paginada. */
 export interface PaginatedResult<T> {
   readonly data: T[];
   readonly meta: PaginationMeta;

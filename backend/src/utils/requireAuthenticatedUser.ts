@@ -4,8 +4,8 @@ import { User } from '../entities/User';
 import { UnauthorizedError } from '../errors/UnauthorizedError';
 
 /**
- * Returns the authenticated user attached by `ensureAuthenticated`,
- * failing loudly instead of using a non-null assertion.
+ * Devolve o usuário autenticado anexado por `ensureAuthenticated`,
+ * falhando explicitamente em vez de usar uma asserção não-nula.
  */
 export function requireAuthenticatedUser(req: Request): User {
   if (!req.user) {

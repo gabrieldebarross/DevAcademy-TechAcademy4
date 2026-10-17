@@ -19,8 +19,8 @@ const PASSWORD_RULES: readonly PasswordRule[] = [
 ];
 
 /**
- * Password strength policy: every rule must pass.
- * Returns the list of unmet requirements so the API can explain the failure.
+ * Política de força da senha: todas as regras precisam passar.
+ * Retorna a lista de requisitos não atendidos para a API explicar a falha.
  */
 export function validatePasswordStrength(value: unknown): PasswordPolicyResult {
   const password = typeof value === 'string' ? value : '';

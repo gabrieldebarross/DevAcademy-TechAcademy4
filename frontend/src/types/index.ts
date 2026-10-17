@@ -1,19 +1,28 @@
 export type UserRole = 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
 
+/** Situação da conta de acesso. */
+export type UserStatus = 'PENDING' | 'ACTIVE' | 'REJECTED';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   cpf: string;
   role: UserRole;
+  status: UserStatus;
+  /** Quando true, é preciso trocar a senha antes de usar as demais telas. */
+  mustChangePassword: boolean;
   createdAt: string;
 }
 
-/** Minimal user data returned by the user listing (no CPF). */
+/** Dados mínimos do usuário devolvidos pela listagem (sem CPF). */
 export interface StudentSummary {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
+  status: UserStatus;
+  mustChangePassword: boolean;
 }
 
 export interface Category {
@@ -28,7 +37,8 @@ export interface Instructor {
   id: string;
   name: string;
   email: string;
-  cpf: string;
+  /** O CPF só é retornado pela API para o perfil ADMIN. */
+  cpf?: string;
   specialty: string;
   bio: string;
   role: UserRole;
@@ -52,6 +62,7 @@ export interface Course {
 }
 
 export type EnrollmentStatus =
+  | 'PENDING'
   | 'ACTIVE'
   | 'SUSPENDED'
   | 'COMPLETED'

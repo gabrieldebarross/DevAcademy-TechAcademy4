@@ -4,7 +4,10 @@ import { AppProviders } from '@/components/providers/AppProviders';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'DevAcademy',
+  title: {
+    default: 'DevAcademy',
+    template: '%s · DevAcademy',
+  },
   description: 'Painel administrativo da DevAcademy',
 };
 

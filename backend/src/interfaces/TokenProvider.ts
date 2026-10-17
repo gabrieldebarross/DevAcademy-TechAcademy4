@@ -4,8 +4,8 @@ export interface TokenPayload {
 }
 
 /**
- * Contract used by the authentication layer.
- * Services depend on this abstraction, not on a concrete library (DIP).
+ * Contrato usado pela camada de autenticação.
+ * Os serviços dependem desta abstração, não de uma biblioteca concreta (DIP).
  */
 export interface TokenProvider {
   generate(payload: TokenPayload): string;

@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import type { Enrollment } from '@/types';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { EnrollmentForm } from '../../_components/EnrollmentForm';
 
 export default function EditEnrollmentPage() {
@@ -48,18 +49,20 @@ export default function EditEnrollmentPage() {
   }, [params.id]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Editar matrícula"
-        description="Atualize os dados da matrícula."
-      />
-      {loading && <Spinner label="Carregando matrícula..." />}
-      {!loading && enrollment && <EnrollmentForm enrollment={enrollment} />}
-      {!loading && !enrollment && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Matrícula não encontrada.
-        </p>
-      )}
-    </div>
+    <RoleGuard allow={['ADMIN', 'INSTRUCTOR']}>
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Editar matrícula"
+          description="Atualize os dados da matrícula."
+        />
+        {loading && <Spinner label="Carregando matrícula..." />}
+        {!loading && enrollment && <EnrollmentForm enrollment={enrollment} />}
+        {!loading && !enrollment && (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            Matrícula não encontrada.
+          </p>
+        )}
+      </div>
+    </RoleGuard>
   );
 }

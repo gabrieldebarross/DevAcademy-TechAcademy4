@@ -2,8 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Fontes resolvidas localmente por pilhas seguras: uma serif de display para
+ * títulos, uma sans para o corpo e uma mono para valores/números. Não há
+ * dependência de download externo no momento do build.
+ */
 :root {
   color-scheme: light;
+  --font-sans: 'Manrope', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue',
+    Arial, sans-serif;
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype',
+    'Book Antiqua', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas,
+    'Liberation Mono', monospace;
 }
 
 html,
@@ -13,8 +24,32 @@ body {
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+/* Títulos (e o título de diálogos) usam a serif de display. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
 }
 
 * {
   @apply box-border;
+}
+
+::selection {
+  @apply bg-primary-200 text-primary-900;
+}
+
+/* Respeita quem prefere menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

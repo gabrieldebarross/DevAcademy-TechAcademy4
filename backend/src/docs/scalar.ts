@@ -1,9 +1,9 @@
 /**
- * HTML page that renders the API reference using Scalar.
+ * Página HTML que renderiza a referência da API usando o Scalar.
  *
- * Scalar is loaded from its official CDN build, so no extra runtime dependency
- * is added to the backend. The OpenAPI document is fetched from
- * `/api/docs/openapi.json` (served by the same backend).
+ * O Scalar é carregado do build oficial no CDN, então nenhuma dependência de
+ * runtime extra é adicionada ao backend. O documento OpenAPI é buscado em
+ * `/api/docs/openapi.json` (servido pelo próprio backend).
  */
 export const scalarHtml = `<!doctype html>
 <html lang="pt-BR">

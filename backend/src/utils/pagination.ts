@@ -22,7 +22,7 @@ function toPositiveInteger(value: unknown, fallback: number): number {
   return parsed;
 }
 
-/** Reads `?page=` and `?limit=` from the query string, with safe defaults. */
+/** Lê `?page=` e `?limit=` da query string, com padrões seguros. */
 export function parsePagination(query: Request['query']): PaginationParams {
   const page = toPositiveInteger(query.page, DEFAULT_PAGE);
   const limit = Math.min(toPositiveInteger(query.limit, DEFAULT_LIMIT), MAX_LIMIT);

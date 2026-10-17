@@ -62,10 +62,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-primary-700">DevAcademy</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-gray-50 to-primary-50 px-4 py-10">
+      <div className="w-full max-w-md animate-slide-up rounded-3xl border border-gray-200 bg-white p-8 shadow-card">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 font-display text-lg font-bold text-white">
+            DA
+          </span>
+          <h1 className="mt-4 font-display text-2xl font-bold text-gray-900">
+            DevAcademy
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             Acesse o painel administrativo
           </p>

@@ -6,6 +6,7 @@ import { InstructorRepository } from '../repositories/InstructorRepository';
 import { CourseService } from '../services/CourseService';
 import { asyncHandler } from '../utils/asyncHandler';
 import { parsePagination } from '../utils/pagination';
+import { requireAuthenticatedUser } from '../utils/requireAuthenticatedUser';
 
 const service = new CourseService(
   new CourseRepository(),
@@ -15,8 +16,9 @@ const service = new CourseService(
 );
 
 export const list = asyncHandler(async (req, res) => {
+  const actor = requireAuthenticatedUser(req);
   const { page, limit } = parsePagination(req.query);
-  const result = await service.list(page, limit);
+  const result = await service.list(actor, page, limit);
 
   res.status(200).json({ data: result.data.map(toCourseResponse), meta: result.meta });
 });
@@ -34,13 +36,16 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const update = asyncHandler(async (req, res) => {
-  const course = await service.update(req.params.id, req.body as CourseInput);
+  const actor = requireAuthenticatedUser(req);
+  const course = await service.update(actor, req.params.id, req.body as CourseInput);
 
   res.status(200).json(toCourseResponse(course));
 });
 
 export const remove = asyncHandler(async (req, res) => {
-  await service.remove(req.params.id);
+  const actor = requireAuthenticatedUser(req);
+
+  await service.remove(actor, req.params.id);
 
   res.status(204).send();
 });

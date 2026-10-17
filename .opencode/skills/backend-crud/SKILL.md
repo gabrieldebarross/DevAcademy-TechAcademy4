@@ -6,7 +6,8 @@ description: Add or extend a complete REST CRUD resource in the backend, followi
 # Backend CRUD workflow
 
 Every resource in this project follows the same five layers. Never skip a layer
-and never let a controller talk to the database directly.
+and never let a controller talk to the database directly. Code comments are
+written in **Brazilian Portuguese**; identifiers stay in **English**.
 
 ```
 src/routes/<resource>.routes.ts
@@ -81,10 +82,29 @@ src/routes/<resource>.routes.ts
    resolve the referenced entity in the service and throw `NotFoundError` if it
    does not exist (never persist a dangling reference).
 
+## Authorization by profile (RBAC)
+
+Every resource also enforces **who** can do **what**:
+
+- **Routes** — add `requireRole(UserRole.ADMIN, ...)` for coarse profile checks
+  (see `src/middlewares/requireRole.ts`). Reading is usually open to any
+  authenticated user; writes are restricted.
+- **Controllers** — read the actor with `requireAuthenticatedUser(req)` and pass
+  it into the service: `service.list(actor, ...)`, `service.update(actor, ...)`.
+- **Services** — validate **ownership** and throw `ForbiddenError`; this is the
+  source of truth (e.g. an `INSTRUCTOR` only edits the courses they teach).
+- **Scoped listings** — filter by the actor's profile in the repository
+  (`findPaginatedByInstructor`, `findPaginatedByStudent`).
+- **Role-aware DTOs** — some responses change with the profile: only the `ADMIN`
+  receives sensitive fields such as the instructor CPF (`toInstructorResponse`
+  vs `toInstructorSummary`).
+
 ## Checklist before finishing
 
 - [ ] `npm run typecheck` in `backend/` passes.
 - [ ] All routes are authenticated (except public auth routes).
+- [ ] Writes are guarded by `requireRole` **and** an ownership check in the
+      service; the controller passes the `actor`.
 - [ ] Listing is paginated and returns `{ data, meta }`.
 - [ ] Updating/deleting a missing id returns 404 (`NotFoundError`).
 - [ ] No `any`, no raw `Error`, no database access outside repositories.

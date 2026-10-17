@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { categoryService } from '@/services/categoryService';
 import { ApiError } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import type { Category, PaginationMeta } from '@/types';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -18,6 +19,7 @@ const LIMIT = 10;
 
 export default function CategoriesPage() {
   const toast = useToast();
+  const { isAdmin } = useAuth();
   const [items, setItems] = useState<Category[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -86,7 +88,11 @@ export default function CategoriesPage() {
         </span>
       ),
     },
-    {
+  ];
+
+  // As ações de escrita só aparecem para quem tem permissão (RBAC).
+  if (isAdmin) {
+    columns.push({
       key: 'actions',
       header: 'Ações',
       render: (item) => (
@@ -105,18 +111,25 @@ export default function CategoriesPage() {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Categorias"
-        description="Gerencie as categorias de cursos."
+        description={
+          isAdmin
+            ? 'Gerencie as categorias de cursos.'
+            : 'Categorias de cursos disponíveis.'
+        }
+        help="Todos os perfis leem as categorias. Criar, editar e excluir é exclusivo do ADMIN."
         actions={
-          <Link href="/categories/new">
-            <Button>Nova categoria</Button>
-          </Link>
+          isAdmin ? (
+            <Link href="/categories/new">
+              <Button>Nova categoria</Button>
+            </Link>
+          ) : undefined
         }
       />
 

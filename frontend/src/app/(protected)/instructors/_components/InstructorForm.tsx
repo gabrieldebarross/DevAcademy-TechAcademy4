@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { instructorService } from '@/services/instructorService';
 import { ApiError } from '@/services/api';
 import { useToast } from '@/contexts/ToastContext';
-import { isValidCpf, isValidEmail } from '@/utils/validators';
+import { isValidCpf, isValidEmail, passwordPolicyMessage, validatePasswordStrength } from '@/utils/validators';
 import type { Instructor } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { CpfInput } from '@/components/ui/CpfInput';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { TextArea } from '@/components/ui/TextArea';
 import { FormField } from '@/components/ui/FormField';
 
@@ -23,6 +24,7 @@ interface FormErrors {
   cpf?: string;
   specialty?: string;
   bio?: string;
+  password?: string;
 }
 
 export function InstructorForm({ instructor }: InstructorFormProps) {
@@ -36,6 +38,7 @@ export function InstructorForm({ instructor }: InstructorFormProps) {
     cpf: instructor?.cpf ?? '',
     specialty: instructor?.specialty ?? '',
     bio: instructor?.bio ?? '',
+    password: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -65,6 +68,14 @@ export function InstructorForm({ instructor }: InstructorFormProps) {
     if (!form.bio.trim()) {
       nextErrors.bio = 'Informe a biografia.';
     }
+    if (!isEdit) {
+      const strength = validatePasswordStrength(form.password);
+      if (!form.password) {
+        nextErrors.password = 'Informe a senha base da conta de acesso.';
+      } else if (!strength.valid) {
+        nextErrors.password = passwordPolicyMessage(strength.failures);
+      }
+    }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
@@ -76,19 +87,27 @@ export function InstructorForm({ instructor }: InstructorFormProps) {
     }
     setSubmitting(true);
     try {
-      const payload = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        cpf: form.cpf.trim(),
-        specialty: form.specialty.trim(),
-        bio: form.bio.trim(),
-      };
       if (instructor) {
-        await instructorService.update(instructor.id, payload);
+        await instructorService.update(instructor.id, {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          cpf: form.cpf.trim(),
+          specialty: form.specialty.trim(),
+          bio: form.bio.trim(),
+        });
         toast.success('Instrutor atualizado com sucesso!');
       } else {
-        await instructorService.create(payload);
-        toast.success('Instrutor criado com sucesso!');
+        await instructorService.create({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          cpf: form.cpf.trim(),
+          specialty: form.specialty.trim(),
+          bio: form.bio.trim(),
+          password: form.password,
+        });
+        toast.success(
+          'Instrutor criado! A conta de acesso foi criada e deverá trocar a senha no 1º acesso.',
+        );
       }
       router.push('/instructors');
     } catch (error) {
@@ -156,6 +175,22 @@ export function InstructorForm({ instructor }: InstructorFormProps) {
           onChange={(event) => update('bio', event.target.value)}
         />
       </FormField>
+      {!isEdit && (
+        <FormField
+          label="Senha base da conta de acesso"
+          htmlFor="password"
+          required
+          error={errors.password}
+          hint="Cria a conta de login do instrutor (perfil INSTRUCTOR). Ele deverá trocar esta senha no primeiro acesso."
+        >
+          <PasswordInput
+            id="password"
+            value={form.password}
+            invalid={Boolean(errors.password)}
+            onChange={(event) => update('password', event.target.value)}
+          />
+        </FormField>
+      )}
       <div className="flex justify-end gap-3">
         <Button
           type="button"

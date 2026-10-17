@@ -25,7 +25,7 @@ function renderCell<T>(column: Column<T>, item: T): ReactNode {
 
 export function Table<T>({ columns, data, keyExtractor }: TableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-card">
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50">
           <tr>
@@ -33,7 +33,7 @@ export function Table<T>({ columns, data, keyExtractor }: TableProps<T>) {
               <th
                 key={column.key}
                 scope="col"
-                className="px-4 py-3 text-left font-semibold text-gray-600"
+                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
               >
                 {column.header}
               </th>
@@ -42,7 +42,7 @@ export function Table<T>({ columns, data, keyExtractor }: TableProps<T>) {
         </thead>
         <tbody className="divide-y divide-gray-100">
           {data.map((item) => (
-            <tr key={keyExtractor(item)} className="hover:bg-gray-50">
+            <tr key={keyExtractor(item)} className="transition hover:bg-gray-50">
               {columns.map((column) => (
                 <td key={column.key} className="px-4 py-3 text-gray-700">
                   {renderCell(column, item)}

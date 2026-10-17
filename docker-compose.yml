@@ -1,18 +1,18 @@
 # =============================================================================
-# DevAcademy - full stack environment
+# DevAcademy - ambiente full stack
 #
-#   nginx  -> the ONLY service exposed to the host (port ${NGINX_PORT})
-#   nginx  -> proxies "/"      to the frontend (Next.js)
-#   nginx  -> proxies "/api/"  to the backend  (Express + TypeORM)
-#   backend -> connects to the MySQL database
+#   nginx   -> ÚNICO serviço exposto ao host (porta ${NGINX_PORT})
+#   nginx   -> encaminha "/"      para o frontend (Next.js)
+#   nginx   -> encaminha "/api/"  para o backend  (Express + TypeORM)
+#   backend -> conecta ao banco MySQL
 #
-# Everything runs on the internal network `devacademy_network`; the database,
-# the backend and the frontend never publish ports to the host.
+# Tudo roda na rede interna `devacademy_network`; o banco, o backend e o
+# frontend nunca publicam portas para o host.
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
-  # Database: MySQL with a named volume so data survives container restarts.
+  # Banco: MySQL com volume nomeado para os dados sobreviverem a reinícios.
   # ---------------------------------------------------------------------------
   database:
     image: mysql:8.0
@@ -44,7 +44,7 @@ services:
       - devacademy_network
 
   # ---------------------------------------------------------------------------
-  # Backend: Node.js + TypeScript API (Express, TypeORM, JWT).
+  # Backend: API em Node.js + TypeScript (Express, TypeORM, JWT).
   # ---------------------------------------------------------------------------
   backend:
     build:
@@ -70,7 +70,7 @@ services:
       - devacademy_network
 
   # ---------------------------------------------------------------------------
-  # Frontend: Next.js application (App Router + TypeScript + Tailwind).
+  # Frontend: aplicação Next.js (App Router + TypeScript + Tailwind).
   # ---------------------------------------------------------------------------
   frontend:
     build:
@@ -89,7 +89,7 @@ services:
       - devacademy_network
 
   # ---------------------------------------------------------------------------
-  # Nginx: reverse proxy and the single entry point of the application.
+  # Nginx: proxy reverso e único ponto de entrada da aplicação.
   # ---------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
@@ -106,7 +106,7 @@ services:
       - devacademy_network
 
 volumes:
-  # Named volume -> MySQL data is persisted between restarts.
+  # Volume nomeado -> os dados do MySQL persistem entre reinícios.
   mysql_data:
     driver: local
 

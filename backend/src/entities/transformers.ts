@@ -1,8 +1,8 @@
 import { ValueTransformer } from 'typeorm';
 
 /**
- * MySQL returns DECIMAL columns as strings to avoid precision loss.
- * The domain layer works with numbers, so the value is converted on load.
+ * O MySQL devolve colunas DECIMAL como string para evitar perda de precisão.
+ * A camada de domínio trabalha com números, então o valor é convertido ao carregar.
  */
 export const decimalTransformer: ValueTransformer = {
   to(value?: number | null): number | null | undefined {

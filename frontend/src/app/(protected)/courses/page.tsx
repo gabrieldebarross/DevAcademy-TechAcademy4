@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { courseService } from '@/services/courseService';
 import { ApiError } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import type { Course, PaginationMeta } from '@/types';
 import { courseLevelLabel, formatCurrency } from '@/utils/formatters';
@@ -20,6 +21,9 @@ const LIMIT = 10;
 
 export default function CoursesPage() {
   const toast = useToast();
+  const { isAdmin, isInstructor, isStudent } = useAuth();
+  // ADMIN e INSTRUCTOR podem escrever; o aluno só consulta.
+  const canWrite = isAdmin || isInstructor;
   const [items, setItems] = useState<Course[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -95,7 +99,12 @@ export default function CoursesPage() {
       header: 'Preço',
       render: (item) => formatCurrency(item.price),
     },
-    {
+  ];
+
+  // Editar/excluir só aparece para quem tem permissão de escrita (RBAC);
+  // o aluno, que só consulta, pode solicitar a própria matrícula.
+  if (canWrite) {
+    columns.push({
       key: 'actions',
       header: 'Ações',
       render: (item) => (
@@ -110,18 +119,38 @@ export default function CoursesPage() {
           </Button>
         </div>
       ),
-    },
-  ];
+    });
+  } else if (isStudent) {
+    columns.push({
+      key: 'actions',
+      header: 'Ações',
+      render: (item) => (
+        <Link href={`/enrollments/new?courseId=${item.id}`}>
+          <Button size="sm">Matricular-se</Button>
+        </Link>
+      ),
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Cursos"
-        description="Gerencie os cursos disponíveis."
+        description={
+          isAdmin
+            ? 'Gerencie os cursos disponíveis.'
+            : isInstructor
+              ? 'Estes são os cursos que você leciona.'
+              : 'Cursos disponíveis na DevAcademy.'
+        }
+        help="Todos os perfis leem o catálogo. Criar é exclusivo do ADMIN; editar e excluir ficam com o ADMIN ou com o INSTRUCTOR responsável pelo curso."
         actions={
-          <Link href="/courses/new">
-            <Button>Novo curso</Button>
-          </Link>
+          // Criar curso é exclusivo do ADMIN: o instrutor edita os que já leciona.
+          isAdmin ? (
+            <Link href="/courses/new">
+              <Button>Novo curso</Button>
+            </Link>
+          ) : undefined
         }
       />
 

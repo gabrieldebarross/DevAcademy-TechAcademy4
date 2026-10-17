@@ -6,7 +6,8 @@ description: Create or extend a screen in the Next.js frontend - paginated list,
 # Frontend page workflow
 
 Each resource always has three separate screens (never a single page doing
-everything) plus its own service and types.
+everything) plus its own service and types. Code comments are written in
+**Brazilian Portuguese**; identifiers stay in **English**.
 
 ```
 src/app/(protected)/<resource>/page.tsx            # paginated list
@@ -14,7 +15,7 @@ src/app/(protected)/<resource>/new/page.tsx        # create
 src/app/(protected)/<resource>/[id]/edit/page.tsx  # edit
 src/app/(protected)/<resource>/_components/*.tsx   # components used only here
 src/services/<resource>Service.ts
-src/types/<resource>.ts
+src/types/index.ts                                 # types/payloads live here
 ```
 
 ## Steps
@@ -47,6 +48,24 @@ src/types/<resource>.ts
 5. **Page-specific components** — anything used by a single resource goes in
    that resource's `_components/` folder as its own function/file.
 
+## Role-aware screens (RBAC)
+
+- Read the profile from `useAuth()` (`role`, `isAdmin`, `isInstructor`,
+  `isStudent`, `hasRole`).
+- Wrap write screens (`new`, `[id]/edit`) in `<RoleGuard allow={[...]}>`.
+- Hide restricted actions with `<Can roles={[...]}>` or conditionals; the visual
+  layer is a convenience — the backend remains the source of truth.
+- Adapt the UI per role: e.g. show the "CPF" column only for the ADMIN, offer
+  "Matricular-se" to a student and "Aprovar" to an instructor/admin.
+- Forms may differ per role too: a student requesting an enrollment only picks a
+  course (`{ courseId }`), while admin/instructor pick the student and status.
+
+## Design tokens
+
+Reuse the "Academy modern" tokens instead of hard-coded colors: `primary`
+(vinho), `accent` (dourado) and the warm `gray`. Titles use `font-display`,
+numeric values may use `font-mono`, and cards use `rounded-2xl … shadow-card`.
+
 ## Rules
 
 - Never call `fetch` directly in a component: always go through a service.
@@ -54,6 +73,8 @@ src/types/<resource>.ts
 - Keep components reusable and dumb; data fetching and navigation live in pages.
 - Money, dates and CPF are formatted with the helpers in
   `src/utils/formatters.ts`.
+- Guard screens and actions with `RoleGuard`/`Can`; never trust the client for
+  authorization.
 - Run `npm run build` in `frontend/` before considering the task done.
 
 ## Shared building blocks

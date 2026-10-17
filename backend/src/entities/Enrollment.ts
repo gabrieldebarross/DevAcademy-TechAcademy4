@@ -6,6 +6,8 @@ import { Course } from './Course';
 import { User } from './User';
 
 export enum EnrollmentStatus {
+  /** Solicitação feita pelo aluno, aguardando aprovação. */
+  PENDING = 'PENDING',
   ACTIVE = 'ACTIVE',
   SUSPENDED = 'SUSPENDED',
   COMPLETED = 'COMPLETED',
@@ -18,7 +20,7 @@ export interface EnrollmentProps {
   readonly status?: EnrollmentStatus;
 }
 
-/** A student can only be enrolled once in the same course. */
+/** Um aluno só pode ser matriculado uma vez no mesmo curso. */
 @Entity('enrollments')
 @Unique('UQ_enrollment_student_course', ['_student', '_course'])
 export class Enrollment extends BaseEntity {

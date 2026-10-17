@@ -1,5 +1,5 @@
 import { request } from './api';
-import type { User } from '@/types';
+import type { User, UserRole } from '@/types';
 
 export interface LoginPayload {
   email: string;
@@ -16,6 +16,8 @@ export interface RegisterPayload {
   email: string;
   cpf: string;
   password: string;
+  /** Perfil pretendido; perfis privilegiados ficam pendentes de aprovação. */
+  role?: UserRole;
 }
 
 export const authService = {

@@ -17,6 +17,7 @@ import { CpfInput } from '@/components/ui/CpfInput';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { FormField } from '@/components/ui/FormField';
+import { userRoleLabel } from '@/utils/formatters';
 
 interface FormErrors {
   name?: string;
@@ -89,7 +90,7 @@ export default function ProfilePage() {
     } else if (!isValidCpf(form.cpf)) {
       nextErrors.cpf = 'Informe um CPF válido.';
     }
-    // The password is optional: it is only validated when the user types one.
+    // A senha é opcional: só é validada quando o usuário digita uma.
     if (form.password) {
       const strength = validatePasswordStrength(form.password);
       if (!strength.valid) {
@@ -115,7 +116,7 @@ export default function ProfilePage() {
         cpf: form.cpf,
         email,
       };
-      // The password is only sent when the user actually fills it in.
+      // A senha só é enviada quando o usuário realmente a preenche.
       if (form.password) {
         payload.password = form.password;
       }
@@ -156,6 +157,18 @@ export default function ProfilePage() {
       >
         <FormField label="E-mail" htmlFor="email" hint="O e-mail não pode ser alterado.">
           <Input id="email" value={email} disabled readOnly />
+        </FormField>
+        <FormField
+          label="Perfil de acesso"
+          htmlFor="role"
+          hint="Definido pelo administrador; não pode ser alterado por aqui."
+        >
+          <Input
+            id="role"
+            value={user ? userRoleLabel(user.role) : ''}
+            disabled
+            readOnly
+          />
         </FormField>
         <FormField label="Nome" htmlFor="name" required error={errors.name}>
           <Input

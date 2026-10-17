@@ -1,14 +1,14 @@
 /**
- * Base class of every expected application error.
+ * Classe base de todo erro esperado da aplicação.
  *
- * Being abstract, it forces each concrete exception to define its own HTTP
- * status code and error label (polymorphism through a common contract), which
- * the global error middleware uses to build the API response.
+ * Por ser abstrata, obriga cada exceção concreta a definir o próprio código de
+ * status HTTP e o rótulo do erro (polimorfismo por um contrato comum), que o
+ * middleware global de erros usa para montar a resposta da API.
  */
 export abstract class AppError extends Error {
   abstract readonly statusCode: number;
 
-  /** Stable identifier returned in the response body. */
+  /** Identificador estável devolvido no corpo da resposta. */
   abstract readonly error: string;
 
   protected constructor(message: string) {

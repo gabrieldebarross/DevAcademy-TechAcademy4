@@ -16,7 +16,10 @@ import { Button } from '@/components/ui/Button';
 import { CpfInput } from '@/components/ui/CpfInput';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { Select } from '@/components/ui/Select';
 import { FormField } from '@/components/ui/FormField';
+import { userRoleLabel } from '@/utils/formatters';
+import type { UserRole } from '@/types';
 
 interface FormErrors {
   name?: string;
@@ -26,6 +29,8 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
+const ROLE_OPTIONS: UserRole[] = ['STUDENT', 'INSTRUCTOR', 'ADMIN'];
+
 export default function RegisterPage() {
   const router = useRouter();
   const toast = useToast();
@@ -34,13 +39,14 @@ export default function RegisterPage() {
     name: '',
     email: '',
     cpf: '',
+    role: 'STUDENT' as UserRole,
     password: '',
     confirmPassword: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
-  function update(field: keyof typeof form, value: string) {
+  function update<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -84,8 +90,18 @@ export default function RegisterPage() {
         email: form.email,
         cpf: form.cpf,
         password: form.password,
+        role: form.role,
       });
-      toast.success('Cadastro realizado com sucesso! Faça login.');
+
+      // Perfis privilegiados não entram direto: aguardam aprovação do ADMIN.
+      if (form.role === 'STUDENT') {
+        toast.success('Cadastro realizado com sucesso! Faça login.');
+      } else {
+        toast.success(
+          'Cadastro enviado! Aguarde a aprovação de um administrador para entrar.',
+        );
+      }
+
       router.push('/login');
     } catch (error) {
       const message =
@@ -99,10 +115,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-primary-700">DevAcademy</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-gray-50 to-primary-50 px-4 py-10">
+      <div className="w-full max-w-md animate-slide-up rounded-3xl border border-gray-200 bg-white p-8 shadow-card">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-700 font-display text-lg font-bold text-white">
+            DA
+          </span>
+          <h1 className="mt-4 font-display text-2xl font-bold text-gray-900">
+            DevAcademy
+          </h1>
           <p className="mt-1 text-sm text-gray-500">Crie a sua conta</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
@@ -132,6 +153,24 @@ export default function RegisterPage() {
               invalid={Boolean(errors.cpf)}
               onValueChange={(value) => update('cpf', value)}
             />
+          </FormField>
+          <FormField
+            label="Perfil desejado"
+            htmlFor="role"
+            required
+            hint="Aluno entra direto. Instrutor e administrador dependem de aprovação."
+          >
+            <Select
+              id="role"
+              value={form.role}
+              onChange={(event) => update('role', event.target.value as UserRole)}
+            >
+              {ROLE_OPTIONS.map((role) => (
+                <option key={role} value={role}>
+                  {userRoleLabel(role)}
+                </option>
+              ))}
+            </Select>
           </FormField>
           <FormField
             label="Senha"

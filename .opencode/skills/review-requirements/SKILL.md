@@ -20,11 +20,21 @@ Inspect the repository and produce a checklist with `OK`, `PARTIAL` or
 - [ ] User update is authenticated, only the owner can update, the fields are
       independent (name, CPF or password, at least one required) and the e-mail
       cannot be changed.
+- [ ] Roles (`ADMIN`/`INSTRUCTOR`/`STUDENT`) exist and public registration always
+      creates a `STUDENT`.
+- [ ] Only the ADMIN can change another user's role (`PATCH /users/:id/role`).
+- [ ] The instructor CPF is never returned to non-ADMIN profiles.
 
 ## 2. Resources (4 full CRUDs, users excluded)
 
 - [ ] Four resources with `GET`, `GET /:id`, `POST`, `PUT /:id`, `DELETE /:id`.
 - [ ] Every resource route requires a valid JWT.
+- [ ] Writes are restricted by profile (`requireRole`) and by **ownership**
+      inside the service (instructors only touch their own courses/enrollments).
+- [ ] Listings are scoped by profile (ADMIN sees all, INSTRUCTOR only theirs,
+      STUDENT only their own).
+- [ ] A student can request an enrollment (`POST` creating a `PENDING` record)
+      and an instructor/admin can approve it.
 - [ ] Listings are paginated (`page`, `limit`, `total`, `totalPages`).
 - [ ] Editing/deleting a missing record returns 404.
 - [ ] At least one relationship between resources (list them all).
@@ -39,6 +49,7 @@ Inspect the repository and produce a checklist with `OK`, `PARTIAL` or
 - [ ] Profile page cannot change the e-mail and confirms the password (the new
       password is optional; the confirmation is required only when one is typed).
 - [ ] Every resource has separate list, create and edit screens with pagination.
+- [ ] Menus, screens and actions are gated by profile (`RoleGuard`/`Can`).
 - [ ] Pages are composed of reusable components; page-exclusive components live
       in their own files (`_components/`).
 

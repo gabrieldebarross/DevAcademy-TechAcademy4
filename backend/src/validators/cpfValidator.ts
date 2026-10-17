@@ -14,8 +14,8 @@ function checkDigit(digits: readonly number[]): number {
 }
 
 /**
- * Validates a CPF using the official check digit algorithm.
- * Accepts formatted (`123.456.789-09`) or raw (`12345678909`) values.
+ * Valida um CPF pelo algoritmo oficial dos dígitos verificadores.
+ * Aceita valor formatado (`123.456.789-09`) ou apenas dígitos (`12345678909`).
  */
 export function isValidCpf(value: unknown): boolean {
   if (typeof value !== 'string') {
@@ -28,7 +28,7 @@ export function isValidCpf(value: unknown): boolean {
     return false;
   }
 
-  // Sequences such as 111.111.111-11 pass the math but are not valid CPFs.
+  // Sequências como 111.111.111-11 passam na conta, mas não são CPFs válidos.
   if (/^(\d)\1{10}$/.test(cpf)) {
     return false;
   }
@@ -41,7 +41,7 @@ export function isValidCpf(value: unknown): boolean {
   return firstCheckDigit === digits[9] && secondCheckDigit === digits[10];
 }
 
-/** Removes every non digit character, storing CPFs in a canonical format. */
+/** Remove todo caractere que não seja dígito, guardando CPFs em formato canônico. */
 export function normalizeCpf(value: string): string {
   return value.replace(/\D/g, '');
 }

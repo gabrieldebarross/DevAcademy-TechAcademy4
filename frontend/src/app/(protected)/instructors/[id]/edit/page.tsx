@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import type { Instructor } from '@/types';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 import { InstructorForm } from '../../_components/InstructorForm';
 
 export default function EditInstructorPage() {
@@ -48,18 +49,20 @@ export default function EditInstructorPage() {
   }, [params.id]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Editar instrutor"
-        description="Atualize os dados do instrutor."
-      />
-      {loading && <Spinner label="Carregando instrutor..." />}
-      {!loading && instructor && <InstructorForm instructor={instructor} />}
-      {!loading && !instructor && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Instrutor não encontrado.
-        </p>
-      )}
-    </div>
+    <RoleGuard allow={['ADMIN']}>
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Editar instrutor"
+          description="Atualize os dados do instrutor."
+        />
+        {loading && <Spinner label="Carregando instrutor..." />}
+        {!loading && instructor && <InstructorForm instructor={instructor} />}
+        {!loading && !instructor && (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            Instrutor não encontrado.
+          </p>
+        )}
+      </div>
+    </RoleGuard>
   );
 }

@@ -6,6 +6,7 @@ import { courseService } from '@/services/courseService';
 import { categoryService } from '@/services/categoryService';
 import { instructorService } from '@/services/instructorService';
 import { ApiError } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import type { Category, Course, CourseLevel, Instructor } from '@/types';
 import { formatCurrencyInput, parseCurrency } from '@/utils/formatters';
@@ -39,6 +40,7 @@ interface FormErrors {
 export function CourseForm({ course }: CourseFormProps) {
   const router = useRouter();
   const toast = useToast();
+  const { isAdmin } = useAuth();
   const isEdit = Boolean(course);
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -247,16 +249,24 @@ export function CourseForm({ course }: CourseFormProps) {
         htmlFor="instructorId"
         required
         error={errors.instructorId}
+        hint={
+          isAdmin
+            ? undefined
+            : 'Como instrutor, você mantém os seus próprios cursos.'
+        }
       >
         <Select
           id="instructorId"
           value={form.instructorId}
           invalid={Boolean(errors.instructorId)}
-          disabled={loadingOptions}
+          disabled={!isAdmin || loadingOptions}
           onChange={(event) => update('instructorId', event.target.value)}
         >
           <option value="">Selecione...</option>
-          {instructors.map((instructor) => (
+          {(isAdmin
+            ? instructors
+            : instructors.filter((item) => item.id === course?.instructor.id)
+          ).map((instructor) => (
             <option key={instructor.id} value={instructor.id}>
               {instructor.name}
             </option>

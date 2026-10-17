@@ -7,6 +7,8 @@ export interface InstructorPayload {
   cpf: string;
   specialty: string;
   bio: string;
+  /** Senha base da conta de acesso. Obrigatória na criação, ausente na edição. */
+  password?: string;
 }
 
 export const instructorService = {

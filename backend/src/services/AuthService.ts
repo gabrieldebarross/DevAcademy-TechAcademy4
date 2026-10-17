@@ -1,13 +1,16 @@
 import { AuthResponse, LoginInput, RegisterInput, toAuthResponse } from '../dtos/auth';
 import { User } from '../entities/User';
+import { UserRole } from '../entities/UserRole';
+import { UserStatus } from '../entities/UserStatus';
 import { ConflictError } from '../errors/ConflictError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 import { UnauthorizedError } from '../errors/UnauthorizedError';
 import { PasswordHasher } from '../interfaces/PasswordHasher';
 import { TokenProvider } from '../interfaces/TokenProvider';
 import { UserRepository } from '../repositories/UserRepository';
 import { normalizeCpf } from '../validators/cpfValidator';
 
-/** Registration and authentication rules. */
+/** Regras de cadastro e autenticação. */
 export class AuthService {
   constructor(
     private readonly users: UserRepository,
@@ -27,11 +30,16 @@ export class AuthService {
       throw new ConflictError('CPF já cadastrado');
     }
 
-    // Domain rule: the plain password never reaches the database.
+    // Regra de domínio: a senha em texto puro nunca chega ao banco.
     User.assertStrongPassword(input.password);
     const passwordHash = await this.hasher.hash(input.password);
 
-    const user = new User({ name: input.name, email, cpf, passwordHash });
+    // Cadastro público: o aluno entra ativo; perfis privilegiados ficam
+    // pendentes e só conseguem logar após a aprovação de um ADMIN.
+    const role = input.role ?? UserRole.STUDENT;
+    const status = role === UserRole.STUDENT ? UserStatus.ACTIVE : UserStatus.PENDING;
+
+    const user = new User({ name: input.name, email, cpf, passwordHash, role, status });
 
     return this.users.save(user);
   }
@@ -40,7 +48,7 @@ export class AuthService {
     const email = (input.email ?? '').trim().toLowerCase();
     const user = await this.users.findByEmail(email);
 
-    // Same message for unknown e-mail and wrong password: no user enumeration.
+    // Mesma mensagem para e-mail desconhecido e senha errada: evita enumeração de usuários.
     if (!user) {
       throw new UnauthorizedError('E-mail ou senha inválidos');
     }
@@ -49,6 +57,16 @@ export class AuthService {
 
     if (!passwordMatches) {
       throw new UnauthorizedError('E-mail ou senha inválidos');
+    }
+
+    // Só contas aprovadas podem entrar; a checagem vem depois da senha para
+    // não revelar a situação de uma conta a quem não a conhece.
+    if (!user.isActive()) {
+      throw new ForbiddenError(
+        user.status === UserStatus.PENDING
+          ? 'Cadastro aguardando aprovação de um administrador'
+          : 'Cadastro recusado por um administrador',
+      );
     }
 
     const token = this.tokens.generate({ sub: user.id, email: user.email });

@@ -1,4 +1,4 @@
-import type { CourseLevel, EnrollmentStatus } from '@/types';
+import type { CourseLevel, EnrollmentStatus, UserRole, UserStatus } from '@/types';
 
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -28,8 +28,8 @@ export function formatCpf(cpf: string): string {
 }
 
 /**
- * Progressive mask used while the user types: keeps at most 11 digits and
- * formats them as `000.000.000-00`.
+ * Máscara progressiva usada enquanto o usuário digita: mantém no máximo 11
+ * dígitos e os formata como `000.000.000-00`.
  */
 export function maskCpf(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -47,9 +47,9 @@ export function maskCpf(value: string): string {
 }
 
 /**
- * Progressive currency mask (Brazilian format) used while typing: every typed
- * digit is treated as a cent, so `1234` becomes `12,34` and `123456` becomes
- * `1.234,56`.
+ * Máscara progressiva de moeda (formato brasileiro) usada durante a digitação:
+ * cada dígito digitado é tratado como centavo, então `1234` vira `12,34` e
+ * `123456` vira `1.234,56`.
  */
 export function maskCurrency(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -62,8 +62,8 @@ export function maskCurrency(value: string): string {
 }
 
 /**
- * Formats a numeric value already in reais (e.g. `1200.5`) into the masked
- * string `1.200,50`, used to pre-fill the field when editing.
+ * Formata um valor numérico já em reais (ex.: `1200.5`) na string mascarada
+ * `1.200,50`, usada para pré-preencher o campo na edição.
  */
 export function formatCurrencyInput(value: number): string {
   if (!Number.isFinite(value)) {
@@ -73,7 +73,7 @@ export function formatCurrencyInput(value: number): string {
   return formatCurrencyCents(Math.round(value * 100));
 }
 
-/** Parses the masked string (`1.234,56`) back to a number (`1234.56`). */
+/** Converte a string mascarada (`1.234,56`) de volta para número (`1234.56`). */
 export function parseCurrency(value: string): number {
   const digits = value.replace(/\D/g, '');
 
@@ -102,6 +102,7 @@ export function courseLevelLabel(level: CourseLevel): string {
 }
 
 const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
+  PENDING: 'Pendente',
   ACTIVE: 'Ativa',
   SUSPENDED: 'Suspensa',
   COMPLETED: 'Concluída',
@@ -110,4 +111,24 @@ const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
 
 export function enrollmentStatusLabel(status: EnrollmentStatus): string {
   return ENROLLMENT_STATUS_LABELS[status] ?? status;
+}
+
+const USER_ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: 'Administrador',
+  INSTRUCTOR: 'Instrutor',
+  STUDENT: 'Aluno',
+};
+
+export function userRoleLabel(role: UserRole): string {
+  return USER_ROLE_LABELS[role] ?? role;
+}
+
+const USER_STATUS_LABELS: Record<UserStatus, string> = {
+  PENDING: 'Pendente',
+  ACTIVE: 'Ativo',
+  REJECTED: 'Recusado',
+};
+
+export function userStatusLabel(status: UserStatus): string {
+  return USER_STATUS_LABELS[status] ?? status;
 }

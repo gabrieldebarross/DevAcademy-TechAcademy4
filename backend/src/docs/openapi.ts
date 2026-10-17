@@ -1,10 +1,10 @@
 /**
- * OpenAPI 3.1 document describing the DevAcademy REST API.
+ * Documento OpenAPI 3.1 que descreve a API REST do DevAcademy.
  *
- * It ships inside the compiled backend and is served as JSON at
- * `GET /api/docs/openapi.json`. The interactive reference (Scalar) is rendered
- * at `GET /api/docs`. Keeping the document as a plain object means it needs no
- * build step and always travels with the code.
+ * Vai dentro do backend compilado e é servido como JSON em
+ * `GET /api/docs/openapi.json`. A referência interativa (Scalar) é renderizada
+ * em `GET /api/docs`. Manter o documento como um objeto simples evita etapa de
+ * build e garante que ele sempre viaje junto com o código.
  */
 
 type JsonObject = Record<string, unknown>;
@@ -40,14 +40,19 @@ interface ResourceConfig {
   readonly singular: string;
   readonly input: string;
   readonly response: string;
+  /** Perfis autorizados a escrever (aparece na descrição das rotas de escrita). */
+  readonly writeRoles: string;
+  /** Observação sobre o escopo de leitura por perfil (opcional). */
+  readonly readScope?: string;
 }
 
-/** The four resources share the exact same REST shape, so it is generated once. */
+/** Os quatro recursos têm exatamente a mesma forma REST, então é gerada uma vez. */
 function resourcePaths(config: ResourceConfig): JsonObject {
   const unauthorized = { $ref: '#/components/responses/Unauthorized' };
   const notFound = { $ref: '#/components/responses/NotFound' };
   const validationError = { $ref: '#/components/responses/ValidationError' };
   const conflict = { $ref: '#/components/responses/Conflict' };
+  const forbidden = { $ref: '#/components/responses/Forbidden' };
   const idParameter = { $ref: '#/components/parameters/ResourceId' };
 
   return {
@@ -55,6 +60,7 @@ function resourcePaths(config: ResourceConfig): JsonObject {
       get: {
         tags: [config.tag],
         summary: `Lista ${config.label} (paginado)`,
+        ...(config.readScope ? { description: config.readScope } : {}),
         parameters: [
           { $ref: '#/components/parameters/Page' },
           { $ref: '#/components/parameters/Limit' },
@@ -70,6 +76,7 @@ function resourcePaths(config: ResourceConfig): JsonObject {
       post: {
         tags: [config.tag],
         summary: `Cadastra ${config.article} ${config.singular}`,
+        description: `Perfis autorizados: ${config.writeRoles}.`,
         requestBody: { required: true, content: jsonContent(schemaRef(config.input)) },
         responses: {
           201: {
@@ -78,6 +85,7 @@ function resourcePaths(config: ResourceConfig): JsonObject {
           },
           400: validationError,
           401: unauthorized,
+          403: forbidden,
           409: conflict,
         },
       },
@@ -99,6 +107,7 @@ function resourcePaths(config: ResourceConfig): JsonObject {
       put: {
         tags: [config.tag],
         summary: `Atualiza ${config.article} ${config.singular}`,
+        description: `Perfis autorizados: ${config.writeRoles}.`,
         parameters: [idParameter],
         requestBody: { required: true, content: jsonContent(schemaRef(config.input)) },
         responses: {
@@ -108,6 +117,7 @@ function resourcePaths(config: ResourceConfig): JsonObject {
           },
           400: validationError,
           401: unauthorized,
+          403: forbidden,
           404: notFound,
           409: conflict,
         },
@@ -115,10 +125,12 @@ function resourcePaths(config: ResourceConfig): JsonObject {
       delete: {
         tags: [config.tag],
         summary: `Remove ${config.article} ${config.singular}`,
+        description: `Perfis autorizados: ${config.writeRoles}.`,
         parameters: [idParameter],
         responses: {
           204: { description: 'Registro removido com sucesso.' },
           401: unauthorized,
+          403: forbidden,
           404: notFound,
         },
       },
@@ -139,6 +151,10 @@ export const openApiDocument: JsonObject = {
       '',
       'Todos os endpoints de listagem são paginados (`?page=&limit=`) e respondem',
       'com `{ data, meta }`. Os erros seguem o formato `{ statusCode, error, message }`.',
+      '',
+      'A API usa **RBAC** com três perfis: `ADMIN` (administra tudo), `INSTRUCTOR`',
+      '(gerencia os próprios cursos e as matrículas das suas aulas) e `STUDENT`',
+      '(consulta cursos e vê apenas as próprias matrículas).',
     ].join('\n'),
   },
   servers: [
@@ -179,6 +195,9 @@ export const openApiDocument: JsonObject = {
       post: {
         tags: ['Autenticação'],
         summary: 'Cadastra um novo usuário',
+        description:
+          'No cadastro é possível escolher o perfil (`role`). O **STUDENT** entra ativo na hora; ' +
+          '**INSTRUCTOR** e **ADMIN** ficam `PENDING` e **não conseguem logar até um ADMIN aprovar**.',
         security: [],
         requestBody: { required: true, content: jsonContent(schemaRef('RegisterInput')) },
         responses: {
@@ -201,6 +220,9 @@ export const openApiDocument: JsonObject = {
           },
           400: { $ref: '#/components/responses/ValidationError' },
           401: errorResponse('E-mail ou senha inválidos.'),
+          403: errorResponse(
+            'Cadastro aguardando aprovação de um administrador, ou recusado, ou ainda com a senha base do primeiro acesso não trocada.',
+          ),
         },
       },
     },
@@ -208,10 +230,25 @@ export const openApiDocument: JsonObject = {
       get: {
         tags: ['Usuários'],
         summary: 'Lista usuários (paginado)',
-        description: 'Listagem somente-leitura usada para escolher o aluno em uma matrícula.',
+        description:
+          'Listagem somente-leitura usada para escolher o aluno em uma matrícula. Restrita a **ADMIN** e **INSTRUCTOR**. Aceita os filtros opcionais `role` e `status`.',
         parameters: [
           { $ref: '#/components/parameters/Page' },
           { $ref: '#/components/parameters/Limit' },
+          {
+            name: 'role',
+            in: 'query',
+            required: false,
+            description: 'Filtra pelo perfil de acesso.',
+            schema: schemaRef('UserRole'),
+          },
+          {
+            name: 'status',
+            in: 'query',
+            required: false,
+            description: 'Filtra pela situação da conta.',
+            schema: schemaRef('UserStatus'),
+          },
         ],
         responses: {
           200: {
@@ -219,6 +256,60 @@ export const openApiDocument: JsonObject = {
             content: jsonContent(listSchema('UserSummary')),
           },
           401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+        },
+      },
+      post: {
+        tags: ['Usuários'],
+        summary: 'Cria uma conta com senha base',
+        description:
+          'Exclusivo do **ADMIN**. Cria a conta já ativa, com o perfil escolhido e uma senha base. ' +
+          'O novo usuário é **obrigado a trocar a senha no primeiro acesso** antes de usar as demais rotas. ' +
+          'Se o perfil for `INSTRUCTOR`, um cadastro de instrutor é criado automaticamente (especialidade "A definir", editável em /instructors).',
+        requestBody: { required: true, content: jsonContent(schemaRef('CreateUserInput')) },
+        responses: {
+          201: { description: 'Usuário criado.', content: jsonContent(schemaRef('User')) },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          409: { $ref: '#/components/responses/Conflict' },
+        },
+      },
+    },
+    '/users/{id}/role': {
+      patch: {
+        tags: ['Usuários'],
+        summary: 'Altera o perfil de acesso de um usuário',
+        description:
+          'Exclusivo do **ADMIN**. Define o perfil do usuário como `ADMIN`, `INSTRUCTOR` ou `STUDENT`. ' +
+          'Ao promover para `INSTRUCTOR` (conta ativa), um cadastro de instrutor é criado; ao deixar de ser instrutor, o cadastro é removido (bloqueado se houver cursos vinculados).',
+        parameters: [{ $ref: '#/components/parameters/ResourceId' }],
+        requestBody: { required: true, content: jsonContent(schemaRef('ChangeRoleInput')) },
+        responses: {
+          200: { description: 'Perfil atualizado.', content: jsonContent(schemaRef('User')) },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
+    '/users/{id}/status': {
+      patch: {
+        tags: ['Usuários'],
+        summary: 'Aprova ou recusa um cadastro pendente',
+        description:
+          'Exclusivo do **ADMIN**. Aprova (`ACTIVE`) ou recusa (`REJECTED`) um cadastro. ' +
+          'Enquanto estiver `PENDING` ou `REJECTED`, a conta não consegue fazer login. ' +
+          'Aprovar um cadastro de `INSTRUCTOR` cria o cadastro de instrutor correspondente.',
+        parameters: [{ $ref: '#/components/parameters/ResourceId' }],
+        requestBody: { required: true, content: jsonContent(schemaRef('UpdateUserStatusInput')) },
+        responses: {
+          200: { description: 'Situação atualizada.', content: jsonContent(schemaRef('User')) },
+          400: { $ref: '#/components/responses/ValidationError' },
+          401: { $ref: '#/components/responses/Unauthorized' },
+          403: { $ref: '#/components/responses/Forbidden' },
+          404: { $ref: '#/components/responses/NotFound' },
         },
       },
     },
@@ -257,6 +348,7 @@ export const openApiDocument: JsonObject = {
       singular: 'categoria',
       input: 'CategoryInput',
       response: 'Category',
+      writeRoles: 'apenas **ADMIN**',
     }),
     ...resourcePaths({
       basePath: 'instructors',
@@ -266,6 +358,10 @@ export const openApiDocument: JsonObject = {
       singular: 'instrutor',
       input: 'InstructorInput',
       response: 'Instructor',
+      writeRoles:
+        'apenas **ADMIN**. Criar um instrutor cria junto a conta de acesso (perfil INSTRUCTOR) com senha base e troca obrigatória no 1º acesso',
+      readScope:
+        'Qualquer usuário autenticado consulta a lista; o **CPF só é retornado para o perfil ADMIN**.',
     }),
     ...resourcePaths({
       basePath: 'courses',
@@ -275,6 +371,9 @@ export const openApiDocument: JsonObject = {
       singular: 'curso',
       input: 'CourseInput',
       response: 'Course',
+      writeRoles: '**ADMIN** (qualquer curso) e **INSTRUCTOR** (apenas os próprios cursos)',
+      readScope:
+        '**ADMIN** e **STUDENT** enxergam o catálogo completo; **INSTRUCTOR** apenas os cursos que leciona.',
     }),
     ...resourcePaths({
       basePath: 'enrollments',
@@ -284,6 +383,10 @@ export const openApiDocument: JsonObject = {
       singular: 'matrícula',
       input: 'EnrollmentInput',
       response: 'Enrollment',
+      writeRoles:
+        '**ADMIN** e **INSTRUCTOR** criam e aprovam matrículas; **STUDENT** solicita a própria matrícula (criada como `PENDING`) e pode cancelá-la enquanto pendente',
+      readScope:
+        '**ADMIN** enxerga todas as matrículas; **INSTRUCTOR** apenas as das próprias aulas; **STUDENT** apenas as próprias.',
     }),
   },
   components: {
@@ -345,25 +448,71 @@ export const openApiDocument: JsonObject = {
           totalPages: { type: 'integer', example: 5 },
         },
       },
+      UserRole: {
+        type: 'string',
+        enum: ['ADMIN', 'INSTRUCTOR', 'STUDENT'],
+        description: 'Perfil de acesso (RBAC): ADMIN, INSTRUCTOR ou STUDENT.',
+      },
+      UserStatus: {
+        type: 'string',
+        enum: ['PENDING', 'ACTIVE', 'REJECTED'],
+        description:
+          'Situação da conta: PENDING (aguardando aprovação), ACTIVE (liberada para login) ou REJECTED (recusada).',
+      },
+      ChangeRoleInput: {
+        type: 'object',
+        required: ['role'],
+        properties: { role: schemaRef('UserRole') },
+      },
+      CreateUserInput: {
+        type: 'object',
+        required: ['name', 'email', 'cpf', 'password', 'role'],
+        properties: {
+          name: { type: 'string', example: 'Maria Silva' },
+          email: { type: 'string', format: 'email', example: 'novo@exemplo.com' },
+          cpf: { type: 'string', description: '11 dígitos (com ou sem máscara).', example: '00000000000' },
+          password: {
+            type: 'string',
+            format: 'password',
+            description:
+              'Senha base, seguindo a política de força. O usuário deverá trocá-la no primeiro acesso.',
+          },
+          role: schemaRef('UserRole'),
+        },
+      },
+      UpdateUserStatusInput: {
+        type: 'object',
+        required: ['status'],
+        description: 'Aprova (`ACTIVE`) ou recusa (`REJECTED`) um cadastro.',
+        properties: { status: schemaRef('UserStatus') },
+      },
       User: {
         type: 'object',
-        required: ['id', 'name', 'email', 'cpf', 'role', 'createdAt'],
+        required: ['id', 'name', 'email', 'cpf', 'role', 'status', 'mustChangePassword', 'createdAt'],
         properties: {
           id: { type: 'string', format: 'uuid' },
           name: { type: 'string', example: 'Maria Silva' },
           email: { type: 'string', format: 'email', example: 'usuario@exemplo.com' },
           cpf: { type: 'string', description: 'Somente dígitos.', example: '00000000000' },
-          role: { type: 'string', example: 'user' },
+          role: schemaRef('UserRole'),
+          status: schemaRef('UserStatus'),
+          mustChangePassword: {
+            type: 'boolean',
+            description: 'Quando `true`, o usuário precisa trocar a senha antes de usar as demais rotas.',
+          },
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
       UserSummary: {
         type: 'object',
-        required: ['id', 'name', 'email'],
+        required: ['id', 'name', 'email', 'role', 'status', 'mustChangePassword'],
         properties: {
           id: { type: 'string', format: 'uuid' },
           name: { type: 'string', example: 'Maria Silva' },
           email: { type: 'string', format: 'email', example: 'usuario@exemplo.com' },
+          role: schemaRef('UserRole'),
+          status: schemaRef('UserStatus'),
+          mustChangePassword: { type: 'boolean' },
         },
       },
       AuthResponse: {
@@ -390,6 +539,11 @@ export const openApiDocument: JsonObject = {
             format: 'password',
             description:
               'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo.',
+          },
+          role: {
+            allOf: [schemaRef('UserRole')],
+            description:
+              'Perfil pretendido (opcional, padrão `STUDENT`). Perfis privilegiados ficam pendentes de aprovação.',
           },
         },
       },
@@ -459,10 +613,16 @@ export const openApiDocument: JsonObject = {
           id: { type: 'string', format: 'uuid' },
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
-          cpf: { type: 'string' },
+          cpf: { type: 'string', description: 'Disponível apenas para o perfil ADMIN.' },
           specialty: { type: 'string', example: 'Desenvolvimento Front-end' },
           bio: { type: ['string', 'null'] },
-          role: { type: 'string', example: 'instructor' },
+          role: {
+            type: 'string',
+            enum: ['INSTRUCTOR'],
+            description:
+              'Sempre INSTRUCTOR. Cada instrutor tem uma conta de acesso vinculada (criada junto no POST).',
+            example: 'INSTRUCTOR',
+          },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
@@ -476,6 +636,12 @@ export const openApiDocument: JsonObject = {
           cpf: { type: 'string' },
           specialty: { type: 'string' },
           bio: { type: ['string', 'null'] },
+          password: {
+            type: 'string',
+            format: 'password',
+            description:
+              'Senha base da conta de acesso criada junto com o instrutor (obrigatória na criação; ignorada na edição). O instrutor deverá trocá-la no primeiro acesso.',
+          },
         },
       },
       CourseLevel: {
@@ -547,8 +713,9 @@ export const openApiDocument: JsonObject = {
       },
       EnrollmentStatus: {
         type: 'string',
-        enum: ['ACTIVE', 'SUSPENDED', 'COMPLETED', 'CANCELLED'],
-        description: 'Ativa, Suspensa, Concluída ou Cancelada.',
+        enum: ['PENDING', 'ACTIVE', 'SUSPENDED', 'COMPLETED', 'CANCELLED'],
+        description:
+          'Pendente (solicitada pelo aluno), Ativa, Suspensa, Concluída ou Cancelada.',
       },
       Enrollment: {
         type: 'object',
@@ -579,9 +746,14 @@ export const openApiDocument: JsonObject = {
       },
       EnrollmentInput: {
         type: 'object',
-        required: ['studentId', 'courseId'],
+        required: ['courseId'],
         properties: {
-          studentId: { type: 'string', format: 'uuid' },
+          studentId: {
+            type: 'string',
+            format: 'uuid',
+            description:
+              'Obrigatório para ADMIN e INSTRUCTOR. Ignorado quando o próprio aluno solicita (usa a conta autenticada).',
+          },
           courseId: { type: 'string', format: 'uuid' },
           status: schemaRef('EnrollmentStatus'),
         },

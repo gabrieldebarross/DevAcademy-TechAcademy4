@@ -1,7 +1,8 @@
 import { Enrollment, EnrollmentStatus } from '../entities/Enrollment';
 
 export interface EnrollmentInput {
-  readonly studentId: string;
+  /** Obrigatório para ADMIN e INSTRUCTOR; ignorado quando quem pede é o aluno. */
+  readonly studentId?: string;
   readonly courseId: string;
   readonly status?: EnrollmentStatus;
 }

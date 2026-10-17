@@ -43,9 +43,12 @@ docker compose up --build
 
 ## Conventions
 
-- Identifiers, file names and comments are written in **English**.
+- Identifiers and file names are written in **English**.
+- Comments are written in **Brazilian Portuguese**, with no accents-in-code
+  restrictions beyond normal UTF-8, because the team and the client persona are
+  Brazilian.
 - User-facing strings (API error messages and UI labels) are written in
-  **Brazilian Portuguese**, because the client persona is Brazilian.
+  **Brazilian Portuguese**.
 - TypeScript is strict: do not use `any`, do not disable strict checks, prefer
   `unknown` plus narrowing when the type is genuinely unknown.
 - Follow the existing layer structure. Backend dependency direction:

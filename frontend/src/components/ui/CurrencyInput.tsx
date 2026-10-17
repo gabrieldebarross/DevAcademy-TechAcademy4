@@ -10,9 +10,9 @@ interface CurrencyInputProps
 }
 
 /**
- * Currency field that masks the input in Brazilian format (`0,00`) while the
- * user types. The parent stores the masked string and converts it back to a
- * number with `parseCurrency` before sending it to the API.
+ * Campo de moeda que mascara a entrada no formato brasileiro (`0,00`) enquanto
+ * o usuário digita. O componente pai guarda a string mascarada e a converte de
+ * volta para número com `parseCurrency` antes de enviar à API.
  */
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
   function CurrencyInput({ value, onValueChange, ...rest }, ref) {

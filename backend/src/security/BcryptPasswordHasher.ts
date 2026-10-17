@@ -3,7 +3,7 @@ import { compare, hash } from 'bcryptjs';
 import { env } from '../config/env';
 import { PasswordHasher } from '../interfaces/PasswordHasher';
 
-/** bcrypt implementation of the `PasswordHasher` contract. */
+/** Implementação de `PasswordHasher` com bcrypt. */
 export class BcryptPasswordHasher implements PasswordHasher {
   async hash(plainPassword: string): Promise<string> {
     return hash(plainPassword, env.bcryptSaltRounds);

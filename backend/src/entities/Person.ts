@@ -4,6 +4,7 @@ import { ValidationError } from '../errors/ValidationError';
 import { isValidCpf, normalizeCpf } from '../validators/cpfValidator';
 import { isValidEmail } from '../validators/emailValidator';
 import { BaseEntity } from './BaseEntity';
+import { UserRole } from './UserRole';
 
 export interface PersonProps {
   readonly name: string;
@@ -12,10 +13,10 @@ export interface PersonProps {
 }
 
 /**
- * Shared behaviour of every person in the system.
+ * Comportamento compartilhado por todas as pessoas do sistema.
  *
- * Reusing these three validated fields in `User` and `Instructor` is real code
- * reuse, which justifies the abstract class instead of duplicated declarations.
+ * Reutilizar estes três campos validados em `User` e `Instructor` é reuso real
+ * de código, o que justifica a classe abstrata no lugar de declarações repetidas.
  */
 export abstract class Person extends BaseEntity {
   @Column({ name: 'name', type: 'varchar', length: 120 })
@@ -83,9 +84,9 @@ export abstract class Person extends BaseEntity {
     this._cpf = normalized;
   }
 
-  /** Identifier of the person specialization, returned by the API. */
-  abstract get role(): string;
+  /** Perfil de acesso da pessoa, retornado pela API. */
+  abstract get role(): UserRole;
 
-  /** Polymorphic summary: each specialization describes itself. */
+  /** Resumo polimórfico: cada especialização descreve a si mesma. */
   abstract describe(): string;
 }
