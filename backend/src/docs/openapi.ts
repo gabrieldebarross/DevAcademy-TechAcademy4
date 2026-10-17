@@ -234,7 +234,8 @@ export const openApiDocument: JsonObject = {
       put: {
         tags: ['Usuários'],
         summary: 'Edita o próprio usuário',
-        description: 'Todos os campos são obrigatórios. O e-mail não pode ser alterado.',
+        description:
+          'Atualiza apenas o próprio usuário. Os campos são opcionais e podem ser alterados individualmente; o e-mail não pode ser alterado.',
         requestBody: {
           required: true,
           content: jsonContent(schemaRef('UpdateProfileInput')),
@@ -406,19 +407,19 @@ export const openApiDocument: JsonObject = {
       },
       UpdateProfileInput: {
         type: 'object',
-        required: ['name', 'email', 'cpf', 'password'],
+        description: 'Informe ao menos um campo. Os campos omitidos são mantidos.',
         properties: {
-          name: { type: 'string' },
+          name: { type: 'string', description: 'Novo nome (opcional).' },
           email: {
             type: 'string',
             format: 'email',
             description: 'Deve ser o e-mail atual (não é possível alterá-lo).',
           },
-          cpf: { type: 'string' },
+          cpf: { type: 'string', description: 'Novo CPF (opcional).' },
           password: {
             type: 'string',
             format: 'password',
-            description: 'Nova senha, seguindo a política de força.',
+            description: 'Nova senha, seguindo a política de força (opcional).',
           },
         },
       },

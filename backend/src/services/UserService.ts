@@ -34,31 +34,39 @@ export class UserService {
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<User> {
     const user = await this.findById(userId);
 
-    // Every field is mandatory, except the e-mail which is immutable.
-    if (
-      typeof input.name !== 'string' ||
-      typeof input.cpf !== 'string' ||
-      typeof input.password !== 'string'
-    ) {
-      throw new ValidationError('Nome, CPF e senha são obrigatórios');
-    }
-
+    // The e-mail is immutable: it may be sent back, but never changed.
     if (typeof input.email === 'string' && input.email.trim().toLowerCase() !== user.email) {
       throw new ForbiddenError('Não é permitido alterar o e-mail');
     }
 
-    const cpf = normalizeCpf(input.cpf);
-    const cpfOwner = await this.users.findByCpf(cpf);
+    // Each field is optional: the user may update the name, the CPF or the
+    // password independently. Absent or empty fields are kept as they are.
+    const name = typeof input.name === 'string' ? input.name.trim() : '';
+    const cpf = normalizeCpf(typeof input.cpf === 'string' ? input.cpf : '');
+    const password = typeof input.password === 'string' ? input.password : '';
 
-    if (cpfOwner && cpfOwner.id !== user.id) {
-      throw new ConflictError('CPF já cadastrado');
+    if (name.length === 0 && cpf.length === 0 && password.length === 0) {
+      throw new ValidationError('Informe ao menos um campo para atualizar');
     }
 
-    User.assertStrongPassword(input.password);
+    if (name.length > 0) {
+      user.name = name;
+    }
 
-    user.name = input.name;
-    user.cpf = cpf;
-    user.passwordHash = await this.hasher.hash(input.password);
+    if (cpf.length > 0) {
+      const cpfOwner = await this.users.findByCpf(cpf);
+
+      if (cpfOwner && cpfOwner.id !== user.id) {
+        throw new ConflictError('CPF já cadastrado');
+      }
+
+      user.cpf = cpf;
+    }
+
+    if (password.length > 0) {
+      User.assertStrongPassword(password);
+      user.passwordHash = await this.hasher.hash(password);
+    }
 
     return this.users.save(user);
   }

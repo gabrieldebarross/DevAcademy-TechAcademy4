@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { usersService } from '@/services/usersService';
+import { usersService, type UpdateProfilePayload } from '@/services/usersService';
 import { ApiError } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -89,14 +89,15 @@ export default function ProfilePage() {
     } else if (!isValidCpf(form.cpf)) {
       nextErrors.cpf = 'Informe um CPF válido.';
     }
-    const strength = validatePasswordStrength(form.password);
-    if (!form.password) {
-      nextErrors.password = 'Informe a senha.';
-    } else if (!strength.valid) {
-      nextErrors.password = passwordPolicyMessage(strength.failures);
-    }
-    if (form.confirmPassword !== form.password) {
-      nextErrors.confirmPassword = 'As senhas não coincidem.';
+    // The password is optional: it is only validated when the user types one.
+    if (form.password) {
+      const strength = validatePasswordStrength(form.password);
+      if (!strength.valid) {
+        nextErrors.password = passwordPolicyMessage(strength.failures);
+      }
+      if (form.confirmPassword !== form.password) {
+        nextErrors.confirmPassword = 'As senhas não coincidem.';
+      }
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -109,12 +110,16 @@ export default function ProfilePage() {
     }
     setSubmitting(true);
     try {
-      const updated = await usersService.updateMe({
+      const payload: UpdateProfilePayload = {
         name: form.name,
         cpf: form.cpf,
-        password: form.password,
         email,
-      });
+      };
+      // The password is only sent when the user actually fills it in.
+      if (form.password) {
+        payload.password = form.password;
+      }
+      const updated = await usersService.updateMe(payload);
       updateUser(updated);
       toast.success('Perfil atualizado com sucesso!');
       setForm((current) => ({
@@ -141,7 +146,7 @@ export default function ProfilePage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Meu perfil"
-        description="Atualize os seus dados de acesso."
+        description="Altere o nome, o CPF ou a senha — você pode atualizar só o que precisar."
       />
 
       <form
@@ -171,9 +176,8 @@ export default function ProfilePage() {
         <FormField
           label="Nova senha"
           htmlFor="password"
-          required
           error={errors.password}
-          hint="Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo."
+          hint="Deixe em branco para manter a senha atual. Para trocar: mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo."
         >
           <PasswordInput
             id="password"
@@ -185,7 +189,6 @@ export default function ProfilePage() {
         <FormField
           label="Confirmar nova senha"
           htmlFor="confirmPassword"
-          required
           error={errors.confirmPassword}
         >
           <PasswordInput

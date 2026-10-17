@@ -8,7 +8,9 @@ import { instructorService } from '@/services/instructorService';
 import { ApiError } from '@/services/api';
 import { useToast } from '@/contexts/ToastContext';
 import type { Category, Course, CourseLevel, Instructor } from '@/types';
+import { formatCurrencyInput, parseCurrency } from '@/utils/formatters';
 import { Button } from '@/components/ui/Button';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
@@ -47,7 +49,7 @@ export function CourseForm({ course }: CourseFormProps) {
     title: course?.title ?? '',
     description: course?.description ?? '',
     workloadHours: course ? String(course.workloadHours) : '',
-    price: course ? String(course.price) : '',
+    price: course ? formatCurrencyInput(course.price) : '',
     level: (course?.level ?? 'BEGINNER') as CourseLevel,
     categoryId: course?.category.id ?? '',
     instructorId: course?.instructor.id ?? '',
@@ -104,8 +106,8 @@ export function CourseForm({ course }: CourseFormProps) {
     if (!form.workloadHours.trim() || Number.isNaN(hours) || hours <= 0) {
       nextErrors.workloadHours = 'Informe uma carga horária válida.';
     }
-    const price = Number(form.price);
-    if (!form.price.trim() || Number.isNaN(price) || price < 0) {
+    const price = parseCurrency(form.price);
+    if (Number.isNaN(price) || price < 0) {
       nextErrors.price = 'Informe um preço válido.';
     }
     if (!form.categoryId) {
@@ -129,7 +131,7 @@ export function CourseForm({ course }: CourseFormProps) {
         title: form.title.trim(),
         description: form.description.trim(),
         workloadHours: Number(form.workloadHours),
-        price: Number(form.price),
+        price: parseCurrency(form.price),
         level: form.level,
         categoryId: form.categoryId,
         instructorId: form.instructorId,
@@ -198,14 +200,11 @@ export function CourseForm({ course }: CourseFormProps) {
           />
         </FormField>
         <FormField label="Preço (R$)" htmlFor="price" required error={errors.price}>
-          <Input
+          <CurrencyInput
             id="price"
-            type="number"
-            min={0}
-            step="0.01"
             value={form.price}
             invalid={Boolean(errors.price)}
-            onChange={(event) => update('price', event.target.value)}
+            onValueChange={(value) => update('price', value)}
           />
         </FormField>
       </div>

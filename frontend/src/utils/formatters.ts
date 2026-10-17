@@ -46,6 +46,51 @@ export function maskCpf(value: string): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
+/**
+ * Progressive currency mask (Brazilian format) used while typing: every typed
+ * digit is treated as a cent, so `1234` becomes `12,34` and `123456` becomes
+ * `1.234,56`.
+ */
+export function maskCurrency(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+
+  if (digits.length === 0) {
+    return '';
+  }
+
+  return formatCurrencyCents(Number.parseInt(digits, 10));
+}
+
+/**
+ * Formats a numeric value already in reais (e.g. `1200.5`) into the masked
+ * string `1.200,50`, used to pre-fill the field when editing.
+ */
+export function formatCurrencyInput(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  return formatCurrencyCents(Math.round(value * 100));
+}
+
+/** Parses the masked string (`1.234,56`) back to a number (`1234.56`). */
+export function parseCurrency(value: string): number {
+  const digits = value.replace(/\D/g, '');
+
+  if (digits.length === 0) {
+    return Number.NaN;
+  }
+
+  return Number.parseInt(digits, 10) / 100;
+}
+
+function formatCurrencyCents(cents: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
 const COURSE_LEVEL_LABELS: Record<CourseLevel, string> = {
   BEGINNER: 'Iniciante',
   INTERMEDIATE: 'Intermediário',

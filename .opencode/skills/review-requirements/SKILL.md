@@ -17,8 +17,9 @@ Inspect the repository and produce a checklist with `OK`, `PARTIAL` or
 - [ ] Registration requires name, e-mail, password and CPF.
 - [ ] CPF validated (check digits) and unique.
 - [ ] Password strength rule enforced (length + upper + lower + digit + symbol).
-- [ ] User update is authenticated, only the owner can update, every field is
-      required and the e-mail cannot be changed.
+- [ ] User update is authenticated, only the owner can update, the fields are
+      independent (name, CPF or password, at least one required) and the e-mail
+      cannot be changed.
 
 ## 2. Resources (4 full CRUDs, users excluded)
 
@@ -35,7 +36,8 @@ Inspect the repository and produce a checklist with `OK`, `PARTIAL` or
       to login afterwards.
 - [ ] API errors are shown in a friendly way (toasts, no raw alerts).
 - [ ] User data is exposed globally through a React context.
-- [ ] Profile page cannot change the e-mail and confirms the password.
+- [ ] Profile page cannot change the e-mail and confirms the password (the new
+      password is optional; the confirmation is required only when one is typed).
 - [ ] Every resource has separate list, create and edit screens with pagination.
 - [ ] Pages are composed of reusable components; page-exclusive components live
       in their own files (`_components/`).

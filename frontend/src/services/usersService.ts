@@ -2,10 +2,10 @@ import { request } from './api';
 import type { PaginatedResponse, StudentSummary, User } from '@/types';
 
 export interface UpdateProfilePayload {
-  name: string;
-  cpf: string;
-  password: string;
-  email: string;
+  name?: string;
+  cpf?: string;
+  password?: string;
+  email?: string;
 }
 
 export const usersService = {
